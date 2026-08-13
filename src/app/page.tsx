@@ -17,6 +17,12 @@ import {
   Minus
 } from "lucide-react";
 
+// Robust API Base URL resolution with fallback
+const API_BASE_URL = 
+  process.env.NEXT_PUBLIC_API_BASE_URL || 
+  process.env.NEXT_PUBLIC_API_URL || 
+  "https://pulseflow-aeo-backend.onrender.com";
+
 export default function AEODashboard() {
   const [mode, setMode] = useState<"single" | "compare">("compare");
 
@@ -38,6 +44,10 @@ export default function AEODashboard() {
     setError(null);
     setSummaryData(null);
 
+    // Remove http/https protocol prefix if present
+    const cleanDomainA = domainA.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const cleanDomainB = domainB.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
     const endpoint = mode === "compare" 
       ? "/api/v1/aeo/compare-audit"
       : "/api/v1/aeo/batch-audit";
@@ -45,19 +55,19 @@ export default function AEODashboard() {
     const payload = mode === "compare"
       ? {
           brand_a_name: brandA,
-          brand_a_domain: domainA,
+          brand_a_domain: cleanDomainA,
           brand_b_name: brandB,
-          brand_b_domain: domainB,
+          brand_b_domain: cleanDomainB,
           category: category,
         }
       : {
           target_brand: brandA,
-          target_domain: domainA,
+          target_domain: cleanDomainA,
           category: category,
         };
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -77,7 +87,7 @@ export default function AEODashboard() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/aeo/jobs/${jobId}`);
+        const res = await fetch(`${API_BASE_URL}/api/v1/aeo/jobs/${jobId}`);
         if (!res.ok) return;
 
         const data = await res.json();
@@ -141,7 +151,9 @@ export default function AEODashboard() {
             
             {/* BRAND A */}
             <div>
-              <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">Brand A Name</label>
+              <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">
+                {mode === "compare" ? "Brand A Name" : "Target Brand Name"}
+              </label>
               <input
                 type="text"
                 value={brandA}
@@ -151,7 +163,9 @@ export default function AEODashboard() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">Brand A Domain</label>
+              <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">
+                {mode === "compare" ? "Brand A Domain" : "Target Brand Domain"}
+              </label>
               <input
                 type="text"
                 value={domainA}
@@ -213,17 +227,89 @@ export default function AEODashboard() {
             ) : (
               <>
                 <Search className="h-5 w-5" />
-                {mode === "compare" ? `Run Head-to-Head: ${brandA} vs ${brandB}` : "Run 30-Prompt Audit"}
+                {mode === "compare" ? `Run Head-to-Head: ${brandA} vs ${brandB}` : `Run 30-Prompt Audit for ${brandA}`}
               </>
             )}
           </button>
         </form>
 
-        {/* ERROR */}
+        {/* ERROR ALERT */}
         {error && (
           <div className="bg-red-950/50 border border-red-800 text-red-300 p-4 rounded-xl flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-red-400" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {/* SINGLE BRAND AUDIT RESULTS */}
+        {mode === "single" && summaryData && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* KPI SCORECARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-2">
+                <span className="text-xs text-slate-400 uppercase font-semibold">Share of Voice (SoV)</span>
+                <p className="text-3xl font-extrabold text-indigo-400">
+                  {summaryData.share_of_voice_percentage ?? summaryData.sov_percentage ?? 0}%
+                </p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-2">
+                <span className="text-xs text-slate-400 uppercase font-semibold">Brand Mentions</span>
+                <p className="text-3xl font-extrabold text-white">
+                  {summaryData.mentions_count ?? summaryData.total_mentions ?? 0} / {summaryData.total_prompts_evaluated ?? 30}
+                </p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-2">
+                <span className="text-xs text-slate-400 uppercase font-semibold">Average Rank</span>
+                <p className="text-3xl font-extrabold text-white">
+                  #{summaryData.average_rank_when_mentioned ?? summaryData.avg_rank ?? "N/A"}
+                </p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-2">
+                <span className="text-xs text-slate-400 uppercase font-semibold">Prompts Evaluated</span>
+                <p className="text-3xl font-extrabold text-white">
+                  {summaryData.total_prompts_evaluated ?? 30}
+                </p>
+              </div>
+            </div>
+
+            {/* DETAILED PROMPT BREAKDOWN TABLE */}
+            {(summaryData.prompt_results || summaryData.prompts || summaryData.results) && (
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+                <h3 className="text-lg font-bold text-white">30-Prompt Audit Breakdown</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400 uppercase text-xs">
+                        <th className="py-3 px-4">Prompt Evaluated</th>
+                        <th className="py-3 px-4">Mention Status</th>
+                        <th className="py-3 px-4">Rank Position</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {(summaryData.prompt_results || summaryData.prompts || summaryData.results).map((item: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-slate-950/50">
+                          <td className="py-3 px-4 font-medium text-slate-200">{item.prompt}</td>
+                          <td className="py-3 px-4">
+                            {item.brand_mentioned || item.mentioned ? (
+                              <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold rounded">
+                                Mentioned
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 bg-slate-800 text-slate-400 text-xs font-medium rounded">
+                                Missing
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-white">
+                            {item.rank ? `#${item.rank}` : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
