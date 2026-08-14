@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { 
   BarChart3, 
   Search, 
@@ -16,19 +17,30 @@ import {
   Code2,
   Mail,
   Globe,
-  PieChart,
   TrendingUp,
-  FileText
+  FileText,
+  User,
+  LogOut
 } from "lucide-react";
+import { createClient } from "@/lib/supabase";
+import AuthModal from "@/components/AuthModal";
 
 const API_BASE_URL = 
   process.env.NEXT_PUBLIC_API_BASE_URL || 
   process.env.NEXT_PUBLIC_API_URL || 
   "https://pulseflow-aeo-backend.onrender.com";
 
-export default function AEODashboard() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const supabase = createClient();
+
   const [mode, setMode] = useState<"single" | "compare">("single");
   const [activeReportTab, setActiveReportTab] = useState<"overview" | "remediation">("overview");
+
+  // Auth States
+  const [user, setUser] = useState<any>(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Input Form States
   const [brandA, setBrandA] = useState("BudgetFlow");
@@ -48,49 +60,29 @@ export default function AEODashboard() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
 
-  const handleStartAudit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("processing");
-    setError(null);
-    setSummaryData(null);
+  // 1. Session Listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
 
-    const cleanDomainA = domainA.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const cleanDomainB = domainB.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
 
-    const endpoint = mode === "compare" 
-      ? "/api/v1/aeo/compare-audit"
-      : "/api/v1/aeo/batch-audit";
+    return () => subscription.unsubscribe();
+  }, []);
 
-    const payload = mode === "compare"
-      ? {
-          brand_a_name: brandA,
-          brand_a_domain: cleanDomainA,
-          brand_b_name: brandB,
-          brand_b_domain: cleanDomainB,
-          category: category,
-        }
-      : {
-          target_brand: brandA,
-          target_domain: cleanDomainA,
-          category: category,
-        };
-
-    try {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Failed to start audit job.");
-      const data = await res.json();
-      setJobId(data.job_id);
-    } catch (err: any) {
-      setStatus("failed");
-      setError(err.message || "An unexpected error occurred.");
+  // 2. Automatic Permlink Query Loader (?report=...)
+  useEffect(() => {
+    const reportParam = searchParams.get("report");
+    if (reportParam && reportParam !== jobId) {
+      setJobId(reportParam);
+      setStatus("processing");
     }
-  };
+  }, [searchParams]);
 
+  // 3. Status Polling & Database Fetch
   useEffect(() => {
     if (!jobId || status !== "processing") return;
 
@@ -102,6 +94,9 @@ export default function AEODashboard() {
         const data = await res.json();
         if (data.status === "completed" && data.summary) {
           setSummaryData(data.summary);
+          if (data.summary.target_brand) setBrandA(data.summary.target_brand);
+          if (data.summary.target_domain) setDomainA(data.summary.target_domain);
+          if (data.summary.category) setCategory(data.summary.category);
           setStatus("completed");
           clearInterval(interval);
         } else if (data.status === "failed") {
@@ -117,7 +112,51 @@ export default function AEODashboard() {
     return () => clearInterval(interval);
   }, [jobId, status]);
 
-  // Mock / Default Competitors & Cited Sources if not returned in single payload
+  const handleStartAudit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("processing");
+    setError(null);
+    setSummaryData(null);
+
+    const cleanDomainA = domainA.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const cleanDomainB = domainB.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+    const endpoint = mode === "compare" 
+      ? "/api/v1/aeo/compare-audit"
+      : "/api/v1/aeo/batch-audit";
+
+    const payload = mode === "compare"
+      ? { brand_a_name: brandA, brand_a_domain: cleanDomainA, brand_b_name: brandB, brand_b_domain: cleanDomainB, category }
+      : { target_brand: brandA, target_domain: cleanDomainA, category };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to start audit job.");
+      const data = await res.json();
+      setJobId(data.job_id);
+      router.push(`?report=${data.job_id}`);
+    } catch (err: any) {
+      setStatus("failed");
+      setError(err.message || "An unexpected error occurred.");
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const handleShareLink = () => {
+    const permUrl = `${window.location.origin}?report=${jobId}`;
+    navigator.clipboard.writeText(permUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const defaultCompetitors = [
     { name: "PocketGuard", count: "7 prompts" },
     { name: "Monarch Money", count: "6 prompts" },
@@ -135,7 +174,6 @@ export default function AEODashboard() {
     "https://getpennies.com/ultimate-multi-currency-budget-tracker"
   ];
 
-  // 4 Outreach Campaigns for the 2x2 Grid
   const outreachCampaigns = [
     {
       url: `https://qubit.capital/blog/best-${category.toLowerCase().replace(/\s+/g, '-')}`,
@@ -175,29 +213,11 @@ export default function AEODashboard() {
     )}\n</script>`;
   };
 
-  const handleCopySchema = () => {
-    navigator.clipboard.writeText(generateJsonLdSchema());
-    setCopiedSchema(true);
-    setTimeout(() => setCopiedSchema(false), 2000);
-  };
-
-  const handleCopyOutreach = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedOutreachIdx(idx);
-    setTimeout(() => setCopiedOutreachIdx(null), 2000);
-  };
-
-  const handleShareLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* TOP BAR / MODE SELECTION */}
+        {/* TOP BAR / MODE & AUTH */}
         <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
@@ -209,23 +229,41 @@ export default function AEODashboard() {
             </p>
           </div>
 
-          <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
-            <button
-              onClick={() => setMode("single")}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${
-                mode === "single" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Single Brand Audit
-            </button>
-            <button
-              onClick={() => setMode("compare")}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
-                mode === "compare" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Swords className="h-3.5 w-3.5" /> Side-by-Side Comparison
-            </button>
+          <div className="flex items-center gap-3">
+            <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
+              <button
+                onClick={() => setMode("single")}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${
+                  mode === "single" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Single Brand Audit
+              </button>
+              <button
+                onClick={() => setMode("compare")}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
+                  mode === "compare" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Swords className="h-3.5 w-3.5" /> Side-by-Side Comparison
+              </button>
+            </div>
+
+            {user ? (
+              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                <span className="text-xs text-slate-300 font-mono">{user.email?.split("@")[0]}</span>
+                <button onClick={handleSignOut} className="text-slate-400 hover:text-red-400 p-1 transition" title="Sign Out">
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthOpen(true)}
+                className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-2"
+              >
+                <User className="h-4 w-4" /> Sign In
+              </button>
+            )}
           </div>
         </div>
 
@@ -302,7 +340,7 @@ export default function AEODashboard() {
             {status === "processing" ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                {mode === "compare" ? "Running Parallel Head-to-Head Evaluation..." : "Evaluating 30 Prompts..."}
+                {mode === "compare" ? "Running Parallel Comparison..." : "Evaluating 30 Prompts..."}
               </>
             ) : (
               <>
@@ -320,17 +358,15 @@ export default function AEODashboard() {
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* DEDICATED VERIFIED REPORT LAYOUT (MATCHING SCREENSHOTS) */}
-        {/* ========================================================= */}
+        {/* VERIFIED AUDIT REPORT */}
         {mode === "single" && summaryData && (
           <div className="space-y-8 animate-fadeIn">
             
-            {/* REPORT HEADER */}
+            {/* HEADER */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
-                  onClick={() => setSummaryData(null)} 
+                  onClick={() => { setSummaryData(null); router.push("/"); }} 
                   className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 text-slate-300 transition"
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -345,14 +381,13 @@ export default function AEODashboard() {
                 </div>
               </div>
 
-              {/* SHARE & EXPORT BUTTONS */}
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleShareLink}
                   className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-2"
                 >
                   {copiedLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Share2 className="h-4 w-4" />}
-                  {copiedLink ? "Link Copied!" : "Share Link"}
+                  {copiedLink ? "Permanent Link Copied!" : "Share Link"}
                 </button>
                 <button
                   onClick={() => window.print()}
@@ -364,10 +399,8 @@ export default function AEODashboard() {
               </div>
             </div>
 
-            {/* 4 CORE KPI CARDS (MATCHING SCREENSHOT 598) */}
+            {/* 4 CORE KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              
-              {/* SHARE OF VOICE */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wide">
                   <TrendingUp className="h-4 w-4" /> SHARE OF VOICE
@@ -375,12 +408,9 @@ export default function AEODashboard() {
                 <p className="text-4xl font-black text-white">
                   {summaryData.share_of_voice_percentage ?? summaryData.sov_percentage ?? 0}%
                 </p>
-                <p className="text-xs text-slate-400">
-                  Across {summaryData.total_prompts_evaluated || 30} evaluated queries
-                </p>
+                <p className="text-xs text-slate-400">Across {summaryData.total_prompts_evaluated || 30} evaluated queries</p>
               </div>
 
-              {/* AVG POSITION */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide">
                   <BarChart3 className="h-4 w-4 text-indigo-400" /> AVG POSITION
@@ -391,18 +421,14 @@ export default function AEODashboard() {
                 <p className="text-xs text-slate-400">When recommended by AI</p>
               </div>
 
-              {/* TOTAL QUERIES */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wide">
                   <FileText className="h-4 w-4" /> TOTAL QUERIES
                 </div>
-                <p className="text-4xl font-black text-white">
-                  {summaryData.total_prompts_evaluated || 30}
-                </p>
+                <p className="text-4xl font-black text-white">{summaryData.total_prompts_evaluated || 30}</p>
                 <p className="text-xs text-slate-400">Prompts in category taxonomy</p>
               </div>
 
-              {/* PRIMARY SOURCES */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-sky-400 uppercase tracking-wide">
                   <Globe className="h-4 w-4" /> PRIMARY SOURCES
@@ -410,17 +436,14 @@ export default function AEODashboard() {
                 <p className="text-4xl font-black text-white">10</p>
                 <p className="text-xs text-slate-400">Top URLs cited by AI</p>
               </div>
-
             </div>
 
-            {/* TAB NAVIGATION: AUDIT OVERVIEW vs REMEDIATION & FIXES */}
+            {/* TABS */}
             <div className="border-b border-slate-800 flex gap-8">
               <button
                 onClick={() => setActiveReportTab("overview")}
                 className={`pb-4 text-sm font-bold flex items-center gap-2 transition ${
-                  activeReportTab === "overview" 
-                    ? "border-b-2 border-indigo-500 text-white" 
-                    : "text-slate-400 hover:text-slate-200"
+                  activeReportTab === "overview" ? "border-b-2 border-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <BarChart3 className="h-4 w-4" /> Audit Overview
@@ -428,47 +451,34 @@ export default function AEODashboard() {
               <button
                 onClick={() => setActiveReportTab("remediation")}
                 className={`pb-4 text-sm font-bold flex items-center gap-2 transition ${
-                  activeReportTab === "remediation" 
-                    ? "border-b-2 border-indigo-500 text-white" 
-                    : "text-slate-400 hover:text-slate-200"
+                  activeReportTab === "remediation" ? "border-b-2 border-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <Code2 className="h-4 w-4 text-indigo-400" /> Remediation & Fixes
               </button>
             </div>
 
-            {/* ========================================================= */}
-            {/* TAB 1: AUDIT OVERVIEW (SCREENSHOTS 598, 599, 600) */}
-            {/* ========================================================= */}
+            {/* TAB 1: OVERVIEW */}
             {activeReportTab === "overview" && (
               <div className="space-y-8 animate-fadeIn">
-                
-                {/* 2-COLUMN SECTION: COMPETITORS & CITED SOURCES */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  
-                  {/* LEFT: COMPETITOR MENTIONS BREAKDOWN */}
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                     <h3 className="text-md font-bold text-white flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-amber-400" />
-                      Competitor Mentions Breakdown
+                      <AlertCircle className="h-5 w-5 text-amber-400" /> Competitor Mentions Breakdown
                     </h3>
                     <div className="space-y-3">
                       {defaultCompetitors.map((comp, idx) => (
                         <div key={idx} className="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-850">
                           <span className="text-sm font-semibold text-slate-200">{comp.name}</span>
-                          <span className="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-semibold rounded-full">
-                            {comp.count}
-                          </span>
+                          <span className="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-semibold rounded-full">{comp.count}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* RIGHT: TOP CITED SOURCES POWERING AI */}
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                     <h3 className="text-md font-bold text-white flex items-center gap-2">
-                      <Globe className="h-5 w-5 text-sky-400" />
-                      Top Cited Sources Powering AI
+                      <Globe className="h-5 w-5 text-sky-400" /> Top Cited Sources Powering AI
                     </h3>
                     <div className="space-y-3">
                       {defaultCitedSources.map((srcUrl, idx) => (
@@ -485,10 +495,8 @@ export default function AEODashboard() {
                       ))}
                     </div>
                   </div>
-
                 </div>
 
-                {/* QUERY AUDIT BREAKDOWN TABLE */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                   <h3 className="text-lg font-bold text-white">Query Audit Breakdown</h3>
                   <div className="overflow-x-auto">
@@ -517,12 +525,8 @@ export default function AEODashboard() {
                                 </span>
                               )}
                             </td>
-                            <td className="py-3.5 px-4 text-slate-400">
-                              {item.rank ? `#${item.rank}` : "-"}
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-300 font-medium">
-                              {defaultCompetitors[idx % defaultCompetitors.length].name}
-                            </td>
+                            <td className="py-3.5 px-4 text-slate-400">{item.rank ? `#${item.rank}` : "-"}</td>
+                            <td className="py-3.5 px-4 text-slate-300 font-medium">{defaultCompetitors[idx % defaultCompetitors.length].name}</td>
                             <td className="py-3.5 px-4 text-xs text-slate-400 max-w-md">
                               Create content that highlights {brandA}'s unique features and benefits compared to competitors.
                             </td>
@@ -532,25 +536,23 @@ export default function AEODashboard() {
                     </table>
                   </div>
                 </div>
-
               </div>
             )}
 
-            {/* ========================================================= */}
-            {/* TAB 2: REMEDIATION & FIXES (SCREENSHOTS 593 & 601) */}
-            {/* ========================================================= */}
+            {/* TAB 2: REMEDIATION */}
             {activeReportTab === "remediation" && (
               <div className="space-y-8 animate-fadeIn">
-                
-                {/* AUTOMATED JSON-LD SCHEMA BOX */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      <Code2 className="h-5 w-5 text-indigo-400" />
-                      Automated JSON-LD Schema
+                      <Code2 className="h-5 w-5 text-indigo-400" /> Automated JSON-LD Schema
                     </h3>
                     <button
-                      onClick={handleCopySchema}
+                      onClick={() => {
+                        navigator.clipboard.writeText(generateJsonLdSchema());
+                        setCopiedSchema(true);
+                        setTimeout(() => setCopiedSchema(false), 2000);
+                      }}
                       className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition"
                     >
                       {copiedSchema ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
@@ -558,15 +560,13 @@ export default function AEODashboard() {
                     </button>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Paste this <code className="text-indigo-400">&lt;script&gt;</code> tag in the <code className="text-indigo-400">&lt;head&gt;</code> section of your HTML document or just before the closing <code className="text-indigo-400">&lt;/body&gt;</code> tag to ensure it is recognized by search engines.
+                    Paste this <code className="text-indigo-400">&lt;script&gt;</code> tag in the <code className="text-indigo-400">&lt;head&gt;</code> section of your HTML document.
                   </p>
-
-                  <div className="relative bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-indigo-300 overflow-x-auto">
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-indigo-300 overflow-x-auto">
                     <pre className="whitespace-pre-wrap">{generateJsonLdSchema()}</pre>
                   </div>
                 </div>
 
-                {/* LISTICLE OUTREACH CAMPAIGNS (2x2 GRID - 4 CARDS) */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
                   <div className="flex items-center gap-2">
                     <Mail className="h-5 w-5 text-indigo-400" />
@@ -578,35 +578,41 @@ export default function AEODashboard() {
                       <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
                         <div className="space-y-3">
                           <div className="flex justify-between items-start gap-2">
-                            <span className="text-xs font-mono text-indigo-400 truncate max-w-[280px]">
-                              {camp.url}
-                            </span>
+                            <span className="text-xs font-mono text-indigo-400 truncate max-w-[280px]">{camp.url}</span>
                             <button
-                              onClick={() => handleCopyOutreach(`${camp.title}\n\n${camp.body}`, idx)}
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${camp.title}\n\n${camp.body}`);
+                                setCopiedOutreachIdx(idx);
+                                setTimeout(() => setCopiedOutreachIdx(null), 2000);
+                              }}
                               className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
-                              title="Copy Email Draft"
                             >
                               {copiedOutreachIdx === idx ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
-
                           <h4 className="text-sm font-bold text-white leading-snug">{camp.title}</h4>
-                          <p className="text-xs text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">
-                            {camp.body}
-                          </p>
+                          <p className="text-xs text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">{camp.body}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-
               </div>
             )}
 
           </div>
         )}
 
+        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       </div>
     </div>
+  );
+}
+
+export default function AEODashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
