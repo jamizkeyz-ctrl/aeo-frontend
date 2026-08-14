@@ -98,7 +98,6 @@ function DashboardContent() {
           const s = data.summary;
           setSummaryData(s);
           
-          // Auto-detect whether this was a compare audit or single audit
           if (s.brand_a_summary && s.brand_b_summary) {
             setMode("compare");
             if (s.brand_a_summary.target_brand) setBrandA(s.brand_a_summary.target_brand);
@@ -192,23 +191,23 @@ function DashboardContent() {
   const outreachCampaigns = [
     {
       url: `https://qubit.capital/blog/best-${category.toLowerCase().replace(/\s+/g, '-')}`,
-      title: `Enhance Your Financial Planning Software List with ${brandA}`,
-      body: `Hi there,\n\nI hope this message finds you well! I recently came across your article on the best financial planning software and was impressed by the selection you've curated.\n\nI wanted to suggest adding ${brandA} to your list. Our platform offers a unique feature set that allows users to manage budgets effortlessly.`
+      title: `Enhance Your ${category} Comparison with ${brandA}`,
+      body: `Hi there,\n\nI hope this message finds you well! I recently came across your article reviewing top tools for ${category}.\n\nWhile ${brandB} is a well-known option, I wanted to suggest adding ${brandA} as an emerging, highly efficient modern alternative. Our platform provides intuitive workflows and specialized capabilities built for today's users.`
     },
     {
-      url: `https://www.qapita.com/blog/financial-tools-startup`,
-      title: `Boost Your Startup Financial Tools List with ${brandA}`,
-      body: `Hi [Recipient's Name],\n\nI hope you're having a great day! I just read your blog post about financial planning tools for startups and found it very insightful.\n\nI'd like to recommend including ${brandA} in your list. Our tool is specifically designed for startups, offering intuitive expense tracking and cash flow analytics.`
+      url: `https://www.qapita.com/blog/${category.toLowerCase().replace(/\s+/g, '-')}-tools`,
+      title: `Boost Your Alternatives Guide with ${brandA}`,
+      body: `Hi [Recipient's Name],\n\nI just read your in-depth guide on ${category} solutions. Great breakdown!\n\nGiven the rising demand for lightweight and transparent alternatives to legacy players like ${brandB}, I recommend listing ${brandA}. We offer streamlined features and competitive advantages that would bring great value to your readers.`
     },
     {
       url: `https://storyflow.so/blog/best-${category.toLowerCase().replace(/\s+/g, '-')}-2026`,
-      title: `${brandA}: A Must-Have for Your 2026 ${category} List!`,
-      body: `Hi [Recipient's Name],\n\nI came across your article on the best ${category.toLowerCase()}s for 2026 and wanted to suggest adding ${brandA} to your list.\n\n${brandA} has evolved into a powerhouse with its recent updates, offering unique features like customizable cash flow dashboards and offline tracking.`
+      title: `${brandA}: A Must-Have in Your 2026 ${category} Roundups!`,
+      body: `Hi [Recipient's Name],\n\nI came across your 2026 roundup for ${category} tools. \n\n${brandA} has quickly become a standout alternative with its sleek UI and powerful feature set. Adding ${brandA} alongside options like ${brandB} will give your audience a well-rounded and updated comparison.`
     },
     {
-      url: `https://www.rock.so/blog/${brandA.toLowerCase()}-alternatives`,
-      title: `Consider Adding ${brandA} to Your Alternatives List!`,
-      body: `Hi [Recipient's Name],\n\nI recently read your article on popular budget tool alternatives and thought it was a great overview of available software.\n\nHowever, I believe ${brandA} itself deserves a spot in your discussion due to its unique feature set and privacy-first architecture.`
+      url: `https://www.rock.so/blog/${brandB.toLowerCase()}-alternatives`,
+      title: `Feature ${brandA} in Your "${brandB} Alternatives" Article`,
+      body: `Hi [Recipient's Name],\n\nI noticed your popular piece highlighting top alternatives to ${brandB}.\n\n${brandA} is engineered specifically to address common user pain points with modern automation and a clean user experience. I'd love to see it included in your list!`
     }
   ];
 
@@ -380,6 +379,8 @@ function DashboardContent() {
         {/* ------------------------------------------------------------- */}
         {isCompareReport && (
           <div className="space-y-8 animate-fadeIn">
+            
+            {/* REPORT HEADER */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -464,64 +465,150 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* HEAD-TO-HEAD PROMPT BREAKDOWN TABLE */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Winner Breakdown
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-slate-400 uppercase text-xs">
-                      <th className="py-3 px-4">PROMPT EVALUATED</th>
-                      <th className="py-3 px-4">{summaryData.brand_a_summary?.target_brand || brandA}</th>
-                      <th className="py-3 px-4">{summaryData.brand_b_summary?.target_brand || brandB}</th>
-                      <th className="py-3 px-4">WINNER</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800">
-                    {(summaryData.head_to_head_prompts || []).map((item: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-slate-950/50">
-                        <td className="py-3.5 px-4 font-medium text-slate-200">{item.prompt}</td>
-                        <td className="py-3.5 px-4">
-                          {item.brand_a_mentioned ? (
-                            <span className="px-2.5 py-1 bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs font-bold rounded">
-                              Rank #{item.brand_a_rank || 1}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-500 font-mono">Missing</span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {item.brand_b_mentioned ? (
-                            <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold rounded">
-                              Rank #{item.brand_b_rank || 1}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-500 font-mono">Missing</span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {item.winner === "brand_a" ? (
-                            <span className="text-xs font-bold text-indigo-400 flex items-center gap-1">
-                              <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_a_summary?.target_brand || brandA}
-                            </span>
-                          ) : item.winner === "brand_b" ? (
-                            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                              <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_b_summary?.target_brand || brandB}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
-                              <Minus className="h-3.5 w-3.5 text-slate-500" /> Tie / Neither
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            {/* TAB SELECTOR */}
+            <div className="border-b border-slate-800 flex gap-8">
+              <button
+                onClick={() => setActiveReportTab("overview")}
+                className={`pb-4 text-sm font-bold flex items-center gap-2 transition ${
+                  activeReportTab === "overview" ? "border-b-2 border-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" /> Comparison Overview
+              </button>
+              <button
+                onClick={() => setActiveReportTab("remediation")}
+                className={`pb-4 text-sm font-bold flex items-center gap-2 transition ${
+                  activeReportTab === "remediation" ? "border-b-2 border-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Code2 className="h-4 w-4 text-indigo-400" /> Remediation & Fixes
+              </button>
             </div>
+
+            {/* TAB 1: COMPARISON OVERVIEW */}
+            {activeReportTab === "overview" && (
+              <div className="space-y-8 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Winner Breakdown
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 uppercase text-xs">
+                          <th className="py-3 px-4">PROMPT EVALUATED</th>
+                          <th className="py-3 px-4">{summaryData.brand_a_summary?.target_brand || brandA}</th>
+                          <th className="py-3 px-4">{summaryData.brand_b_summary?.target_brand || brandB}</th>
+                          <th className="py-3 px-4">WINNER</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {(summaryData.head_to_head_prompts || []).map((item: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-slate-950/50">
+                            <td className="py-3.5 px-4 font-medium text-slate-200">{item.prompt}</td>
+                            <td className="py-3.5 px-4">
+                              {item.brand_a_mentioned ? (
+                                <span className="px-2.5 py-1 bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs font-bold rounded">
+                                  Rank #{item.brand_a_rank || 1}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-slate-500 font-mono">Missing</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {item.brand_b_mentioned ? (
+                                <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold rounded">
+                                  Rank #{item.brand_b_rank || 1}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-slate-500 font-mono">Missing</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {item.winner === "brand_a" ? (
+                                <span className="text-xs font-bold text-indigo-400 flex items-center gap-1">
+                                  <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_a_summary?.target_brand || brandA}
+                                </span>
+                              ) : item.winner === "brand_b" ? (
+                                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                  <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_b_summary?.target_brand || brandB}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-slate-400 flex items-center gap-1">
+                                  <Minus className="h-3.5 w-3.5 text-slate-500" /> Tie / Neither
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: REMEDIATION & FIXES */}
+            {activeReportTab === "remediation" && (
+              <div className="space-y-8 animate-fadeIn">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Code2 className="h-5 w-5 text-indigo-400" /> Automated JSON-LD Schema ({brandA})
+                    </h3>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(generateJsonLdSchema());
+                        setCopiedSchema(true);
+                        setTimeout(() => setCopiedSchema(false), 2000);
+                      }}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition"
+                    >
+                      {copiedSchema ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                      {copiedSchema ? "Copied!" : "Copy Code"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Paste this <code className="text-indigo-400">&lt;script&gt;</code> tag in the <code className="text-indigo-400">&lt;head&gt;</code> section of {brandA}&apos;s website to signal entity data to AI crawlers.
+                  </p>
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-indigo-300 overflow-x-auto">
+                    <pre className="whitespace-pre-wrap">{generateJsonLdSchema()}</pre>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-indigo-400" />
+                    <h3 className="text-lg font-bold text-white">Competitor Conquest Outreach Campaigns</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {outreachCampaigns.map((camp, idx) => (
+                      <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-xs font-mono text-indigo-400 truncate max-w-[280px]">{camp.url}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${camp.title}\n\n${camp.body}`);
+                                setCopiedOutreachIdx(idx);
+                                setTimeout(() => setCopiedOutreachIdx(null), 2000);
+                              }}
+                              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
+                            >
+                              {copiedOutreachIdx === idx ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                          <h4 className="text-sm font-bold text-white leading-snug">{camp.title}</h4>
+                          <p className="text-xs text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">{camp.body}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -697,7 +784,7 @@ function DashboardContent() {
                             <td className="py-3.5 px-4 text-slate-400">{item.rank ? `#${item.rank}` : "-"}</td>
                             <td className="py-3.5 px-4 text-slate-300 font-medium">{defaultCompetitors[idx % defaultCompetitors.length].name}</td>
                             <td className="py-3.5 px-4 text-xs text-slate-400 max-w-md">
-                              Create content that highlights {brandA}'s unique features and benefits compared to competitors.
+                              Create content that highlights {brandA}&apos;s unique features and benefits compared to competitors.
                             </td>
                           </tr>
                         ))}
