@@ -20,7 +20,9 @@ import {
   TrendingUp,
   FileText,
   User,
-  LogOut
+  LogOut,
+  Trophy,
+  Minus
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
@@ -44,7 +46,7 @@ function DashboardContent() {
 
   // Input Form States
   const [brandA, setBrandA] = useState("BudgetFlow");
-  const [domainA, setDomainA] = useState("budgetflow.app");
+  const [domainA, setDomainA] = useState("budgetflow-finance.netlify.app");
   const [brandB, setBrandB] = useState("YNAB");
   const [domainB, setDomainB] = useState("ynab.com");
   const [category, setCategory] = useState("Personal Finance App");
@@ -73,7 +75,7 @@ function DashboardContent() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 2. Automatic Permlink Query Loader (?report=...)
+  // 2. Query Loader (?report=...)
   useEffect(() => {
     const reportParam = searchParams.get("report");
     if (reportParam && reportParam !== jobId) {
@@ -82,7 +84,7 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
-  // 3. Status Polling & Database Fetch
+  // 3. Status Polling & Supabase Retrieval
   useEffect(() => {
     if (!jobId || status !== "processing") return;
 
@@ -93,10 +95,23 @@ function DashboardContent() {
 
         const data = await res.json();
         if (data.status === "completed" && data.summary) {
-          setSummaryData(data.summary);
-          if (data.summary.target_brand) setBrandA(data.summary.target_brand);
-          if (data.summary.target_domain) setDomainA(data.summary.target_domain);
-          if (data.summary.category) setCategory(data.summary.category);
+          const s = data.summary;
+          setSummaryData(s);
+          
+          // Auto-detect whether this was a compare audit or single audit
+          if (s.brand_a_summary && s.brand_b_summary) {
+            setMode("compare");
+            if (s.brand_a_summary.target_brand) setBrandA(s.brand_a_summary.target_brand);
+            if (s.brand_a_summary.target_domain) setDomainA(s.brand_a_summary.target_domain);
+            if (s.brand_b_summary.target_brand) setBrandB(s.brand_b_summary.target_brand);
+            if (s.brand_b_summary.target_domain) setDomainB(s.brand_b_summary.target_domain);
+          } else {
+            setMode("single");
+            if (s.target_brand) setBrandA(s.target_brand);
+            if (s.target_domain) setDomainA(s.target_domain);
+          }
+
+          if (s.category) setCategory(s.category);
           setStatus("completed");
           clearInterval(interval);
         } else if (data.status === "failed") {
@@ -212,6 +227,8 @@ function DashboardContent() {
       2
     )}\n</script>`;
   };
+
+  const isCompareReport = summaryData && (summaryData.brand_a_summary || summaryData.head_to_head_prompts);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
@@ -358,8 +375,160 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* VERIFIED AUDIT REPORT */}
-        {mode === "single" && summaryData && (
+        {/* ------------------------------------------------------------- */}
+        {/* VIEW 1: SIDE-BY-SIDE HEAD-TO-HEAD COMPARISON REPORT           */}
+        {/* ------------------------------------------------------------- */}
+        {isCompareReport && (
+          <div className="space-y-8 animate-fadeIn">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => { setSummaryData(null); router.push("/"); }} 
+                  className="p-2 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 text-slate-300 transition"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <Swords className="h-4 w-4" /> HEAD-TO-HEAD COMPETITOR BENCHMARK
+                  </span>
+                  <h2 className="text-2xl font-extrabold text-white">
+                    {summaryData.brand_a_summary?.target_brand || brandA} vs {summaryData.brand_b_summary?.target_brand || brandB}
+                  </h2>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleShareLink}
+                  className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-2"
+                >
+                  {copiedLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Share2 className="h-4 w-4" />}
+                  {copiedLink ? "Permanent Link Copied!" : "Share Link"}
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  Export PDF
+                </button>
+              </div>
+            </div>
+
+            {/* BATTLE SCORECARD */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-slate-900 border border-indigo-900/50 p-6 rounded-2xl space-y-3 relative overflow-hidden">
+                <div className="text-xs font-bold text-indigo-400 uppercase tracking-wide">
+                  {summaryData.brand_a_summary?.target_brand || brandA} (Target)
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-white">
+                    {summaryData.brand_a_summary?.share_of_voice_percentage ?? 0}%
+                  </span>
+                  <span className="text-xs text-slate-400 font-semibold">Share of Voice</span>
+                </div>
+                <div className="text-xs text-slate-400 border-t border-slate-800 pt-3 flex justify-between">
+                  <span>Direct Wins:</span>
+                  <strong className="text-indigo-300">{summaryData.brand_a_wins || 0} prompts</strong>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-center items-center text-center space-y-2">
+                <Trophy className="h-8 w-8 text-amber-400" />
+                <h4 className="text-sm font-bold text-slate-200">Outcome Breakdown</h4>
+                <p className="text-xs text-slate-400">
+                  {summaryData.brand_a_wins > summaryData.brand_b_wins 
+                    ? `${summaryData.brand_a_summary?.target_brand || brandA} leads in visibility` 
+                    : summaryData.brand_b_wins > summaryData.brand_a_wins 
+                    ? `${summaryData.brand_b_summary?.target_brand || brandB} leads in visibility`
+                    : "Dead heat tie across answer engines"}
+                </p>
+                <span className="text-xs font-mono text-slate-500">Ties / Neutral: {summaryData.ties || 0}</span>
+              </div>
+
+              <div className="bg-slate-900 border border-emerald-900/50 p-6 rounded-2xl space-y-3 relative overflow-hidden">
+                <div className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
+                  {summaryData.brand_b_summary?.target_brand || brandB} (Competitor)
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-white">
+                    {summaryData.brand_b_summary?.share_of_voice_percentage ?? 0}%
+                  </span>
+                  <span className="text-xs text-slate-400 font-semibold">Share of Voice</span>
+                </div>
+                <div className="text-xs text-slate-400 border-t border-slate-800 pt-3 flex justify-between">
+                  <span>Direct Wins:</span>
+                  <strong className="text-emerald-300">{summaryData.brand_b_wins || 0} prompts</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* HEAD-TO-HEAD PROMPT BREAKDOWN TABLE */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Winner Breakdown
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400 uppercase text-xs">
+                      <th className="py-3 px-4">PROMPT EVALUATED</th>
+                      <th className="py-3 px-4">{summaryData.brand_a_summary?.target_brand || brandA}</th>
+                      <th className="py-3 px-4">{summaryData.brand_b_summary?.target_brand || brandB}</th>
+                      <th className="py-3 px-4">WINNER</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {(summaryData.head_to_head_prompts || []).map((item: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-slate-950/50">
+                        <td className="py-3.5 px-4 font-medium text-slate-200">{item.prompt}</td>
+                        <td className="py-3.5 px-4">
+                          {item.brand_a_mentioned ? (
+                            <span className="px-2.5 py-1 bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs font-bold rounded">
+                              Rank #{item.brand_a_rank || 1}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-500 font-mono">Missing</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {item.brand_b_mentioned ? (
+                            <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold rounded">
+                              Rank #{item.brand_b_rank || 1}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-500 font-mono">Missing</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {item.winner === "brand_a" ? (
+                            <span className="text-xs font-bold text-indigo-400 flex items-center gap-1">
+                              <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_a_summary?.target_brand || brandA}
+                            </span>
+                          ) : item.winner === "brand_b" ? (
+                            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                              <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_b_summary?.target_brand || brandB}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400 flex items-center gap-1">
+                              <Minus className="h-3.5 w-3.5 text-slate-500" /> Tie / Neither
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* VIEW 2: SINGLE BRAND AUDIT REPORT                             */}
+        {/* ------------------------------------------------------------- */}
+        {!isCompareReport && summaryData && (
           <div className="space-y-8 animate-fadeIn">
             
             {/* HEADER */}
