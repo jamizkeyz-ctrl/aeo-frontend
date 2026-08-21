@@ -271,8 +271,8 @@ function DashboardContent() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[550px] bg-gradient-to-b from-indigo-600/20 via-purple-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
       <div className="absolute top-[800px] right-0 w-[500px] h-[500px] bg-indigo-900/10 blur-[140px] pointer-events-none -z-10" />
 
-      {/* STICKY FROSTED NAVBAR */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#030712]/80 border-b border-slate-800/80">
+      {/* FROZEN FROSTED NAVBAR */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-xl bg-[#030712]/85 border-b border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setSummaryData(null); router.push("/"); }}>
             <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 border border-indigo-400/30">
@@ -320,9 +320,9 @@ function DashboardContent() {
       </header>
 
       {/* MAIN CONTENT AREA */}
-      <main className="max-w-7xl mx-auto px-6 py-12 space-y-24">
+      <main className="max-w-7xl mx-auto px-6 pt-28 pb-12 space-y-24">
         
-        {/* HERO SECTION (Shown when not viewing report) */}
+        {/* HERO SECTION */}
         {!summaryData && (
           <section className="text-center max-w-4xl mx-auto space-y-8 pt-6">
             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-indigo-950/70 border border-indigo-600/40 text-indigo-300 text-xs font-semibold shadow-inner">
@@ -368,7 +368,7 @@ function DashboardContent() {
         )}
 
         {/* LIVE INTERACTIVE AUDIT SANDBOX */}
-        <section id="engine" className="scroll-mt-24 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
+        <section id="engine" className="scroll-mt-28 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
             <div>
@@ -997,7 +997,7 @@ function DashboardContent() {
             </section>
 
             {/* INTERACTIVE PRODUCT TABS */}
-            <section id="solutions" className="scroll-mt-24 space-y-12">
+            <section id="solutions" className="scroll-mt-28 space-y-12">
               <div className="text-center space-y-3 max-w-2xl mx-auto">
                 <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Platform Capabilities</div>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -1121,7 +1121,7 @@ function DashboardContent() {
             </section>
 
             {/* PIPELINE ARCHITECTURE SECTION */}
-            <section id="architecture" className="scroll-mt-24 space-y-12">
+            <section id="architecture" className="scroll-mt-28 space-y-12">
               <div className="text-center space-y-3 max-w-2xl mx-auto">
                 <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Methodology & Workflow</div>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -1176,7 +1176,7 @@ function DashboardContent() {
             </section>
 
             {/* FAQ SECTION */}
-            <section id="faq" className="scroll-mt-24 space-y-8 max-w-3xl mx-auto">
+            <section id="faq" className="scroll-mt-28 space-y-8 max-w-3xl mx-auto">
               <div className="text-center space-y-3">
                 <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Got Questions?</div>
                 <h2 className="text-3xl font-extrabold text-white tracking-tight">
