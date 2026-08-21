@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Script from "next/script";
 import { 
   BarChart3, 
   Search, 
@@ -31,10 +32,12 @@ import {
   CheckCircle2,
   History,
   Clock,
-  ExternalLink as OpenIcon
+  ExternalLink as OpenIcon,
+  Crown
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
+import PricingModal from "@/components/PricingModal";
 
 const API_BASE_URL = 
   process.env.NEXT_PUBLIC_API_BASE_URL || 
@@ -51,9 +54,11 @@ function DashboardContent() {
   const [activeInteractiveTab, setActiveInteractiveTab] = useState<"sov" | "competitor" | "remediation">("sov");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Auth States
+  // Auth & Subscription States
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
 
   // History State
   const [auditHistory, setAuditHistory] = useState<any[]>([]);
@@ -77,7 +82,23 @@ function DashboardContent() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
 
-  // 1. Fetch Audit History
+  // 1. Fetch User Profile (Tier & Usage Quota)
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      if (!error && data) {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+    }
+  }, [supabase]);
+
+  // 2. Fetch Audit History
   const fetchAuditHistory = useCallback(async (userId?: string) => {
     try {
       setLoadingHistory(true);
@@ -102,12 +123,13 @@ function DashboardContent() {
     }
   }, [supabase]);
 
-  // 2. Auth Session Listener
+  // 3. Auth Session Listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const activeUser = session?.user ?? null;
       setUser(activeUser);
       if (activeUser) {
+        fetchUserProfile(activeUser.id);
         fetchAuditHistory(activeUser.id);
       }
     });
@@ -116,14 +138,15 @@ function DashboardContent() {
       const activeUser = session?.user ?? null;
       setUser(activeUser);
       if (activeUser) {
+        fetchUserProfile(activeUser.id);
         fetchAuditHistory(activeUser.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchAuditHistory, supabase]);
+  }, [fetchAuditHistory, fetchUserProfile, supabase]);
 
-  // 3. Query Loader (?report=...)
+  // 4. Query Loader (?report=...)
   useEffect(() => {
     const reportParam = searchParams.get("report");
     if (reportParam && reportParam !== jobId) {
@@ -132,7 +155,7 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
-  // 4. Polling & Report Data Ingestion
+  // 5. Polling & Report Data Ingestion
   useEffect(() => {
     if (!jobId || status !== "processing") return;
 
@@ -160,7 +183,10 @@ function DashboardContent() {
 
           if (s.category) setCategory(s.category);
           setStatus("completed");
-          if (user) fetchAuditHistory(user.id);
+          if (user) {
+            fetchAuditHistory(user.id);
+            fetchUserProfile(user.id);
+          }
           clearInterval(interval);
         } else if (data.status === "failed") {
           setError(data.error || "Batch execution failed.");
@@ -173,10 +199,17 @@ function DashboardContent() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [jobId, status, user, fetchAuditHistory]);
+  }, [jobId, status, user, fetchAuditHistory, fetchUserProfile]);
 
   const handleStartAudit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check usage quota for free-tier users
+    if (profile && profile.tier === "free" && profile.audits_used >= profile.audits_limit) {
+      setIsPricingOpen(true);
+      return;
+    }
+
     setStatus("processing");
     setError(null);
     setSummaryData(null);
@@ -224,6 +257,7 @@ function DashboardContent() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setAuditHistory([]);
+    setProfile(null);
   };
 
   const handleShareLink = () => {
@@ -323,6 +357,9 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-[#030712] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased relative overflow-x-hidden">
       
+      {/* Paystack Inline Script */}
+      <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
+
       {/* GLOW DECORATIONS */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[550px] bg-gradient-to-b from-indigo-600/20 via-purple-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
       <div className="absolute top-[800px] right-0 w-[500px] h-[500px] bg-indigo-900/10 blur-[140px] pointer-events-none -z-10" />
@@ -349,9 +386,24 @@ function DashboardContent() {
 
           <div className="flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 px-4 py-2 rounded-xl shadow-inner">
-                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs text-slate-300 font-mono">{user.email?.split("@")[0]}</span>
+              <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-inner">
+                {/* Plan Badge / Upgrade Trigger */}
+                <button
+                  onClick={() => setIsPricingOpen(true)}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 transition ${
+                    profile?.tier === "agency"
+                      ? "bg-purple-950 text-purple-300 border border-purple-800"
+                      : profile?.tier === "pro"
+                      ? "bg-indigo-950 text-indigo-300 border border-indigo-800"
+                      : "bg-slate-800 text-amber-400 border border-slate-700 hover:bg-slate-700"
+                  }`}
+                  title="Click to view plans & upgrade"
+                >
+                  <Crown className="h-3 w-3" />
+                  {profile?.tier ? profile.tier.toUpperCase() : "FREE"}
+                </button>
+
+                <span className="text-xs text-slate-300 font-mono hidden sm:inline">{user.email?.split("@")[0]}</span>
                 <button onClick={handleSignOut} className="text-slate-400 hover:text-red-400 transition ml-1" title="Sign Out">
                   <LogOut className="h-4 w-4" />
                 </button>
@@ -405,14 +457,12 @@ function DashboardContent() {
               >
                 Run Free Visibility Audit <ChevronRight className="h-4 w-4" />
               </button>
-              {!user && (
-                <button
-                  onClick={() => setIsAuthOpen(true)}
-                  className="w-full sm:w-auto px-8 py-4 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
-                >
-                  Create Workspace
-                </button>
-              )}
+              <button
+                onClick={() => setIsPricingOpen(true)}
+                className="w-full sm:w-auto px-8 py-4 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition flex items-center justify-center gap-2"
+              >
+                <Crown className="h-4 w-4 text-amber-400" /> View Pricing & Plans
+              </button>
             </div>
 
             {/* ENGINE BADGES */}
@@ -439,25 +489,32 @@ function DashboardContent() {
               </h2>
             </div>
 
-            <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setMode("single")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-                  mode === "single" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Single Brand
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("compare")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
-                  mode === "compare" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <Swords className="h-3.5 w-3.5" /> Side-by-Side
-              </button>
+            <div className="flex items-center gap-3">
+              {profile && (
+                <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+                  Quotas: <strong className="text-indigo-400">{profile.audits_used}</strong> / {profile.audits_limit} used
+                </span>
+              )}
+              <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setMode("single")}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+                    mode === "single" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Single Brand
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("compare")}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+                    mode === "compare" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Swords className="h-3.5 w-3.5" /> Side-by-Side
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1371,20 +1428,27 @@ function DashboardContent() {
                 >
                   Start Free Audit <ArrowRight className="h-4 w-4" />
                 </button>
-                {!user && (
-                  <button
-                    onClick={() => setIsAuthOpen(true)}
-                    className="px-8 py-3.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
-                  >
-                    Create Account
-                  </button>
-                )}
+                <button
+                  onClick={() => setIsPricingOpen(true)}
+                  className="px-8 py-3.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
+                >
+                  View Pricing Tiers
+                </button>
               </div>
             </section>
           </>
         )}
 
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        <PricingModal 
+          isOpen={isPricingOpen} 
+          onClose={() => setIsPricingOpen(false)} 
+          userEmail={user?.email} 
+          userId={user?.id} 
+          onSuccess={() => {
+            if (user) fetchUserProfile(user.id);
+          }} 
+        />
       </main>
 
       {/* FOOTER */}
