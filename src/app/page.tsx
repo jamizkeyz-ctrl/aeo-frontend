@@ -22,7 +22,15 @@ import {
   User,
   LogOut,
   Trophy,
-  Minus
+  Minus,
+  Sparkles,
+  Zap,
+  ShieldCheck,
+  Cpu,
+  Layers,
+  CheckCircle2,
+  ChevronRight,
+  Bot
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
@@ -192,22 +200,22 @@ function DashboardContent() {
     {
       url: `https://qubit.capital/blog/best-${category.toLowerCase().replace(/\s+/g, '-')}`,
       title: `Enhance Your ${category} Comparison with ${brandA}`,
-      body: `Hi there,\n\nI hope this message finds you well! I recently came across your article reviewing top tools for ${category}.\n\nWhile ${brandB} is a well-known option, I wanted to suggest adding ${brandA} as an emerging, highly efficient modern alternative. Our platform provides intuitive workflows and specialized capabilities built for today's users.`
+      body: `Hi there,\n\nI hope this message finds you well! I recently came across your article reviewing top tools for ${category}.\n\nWhile ${brandB} is a well-known option, I wanted to suggest adding ${brandA} as an emerging, highly efficient modern alternative.`
     },
     {
       url: `https://www.qapita.com/blog/${category.toLowerCase().replace(/\s+/g, '-')}-tools`,
       title: `Boost Your Alternatives Guide with ${brandA}`,
-      body: `Hi [Recipient's Name],\n\nI just read your in-depth guide on ${category} solutions. Great breakdown!\n\nGiven the rising demand for lightweight and transparent alternatives to legacy players like ${brandB}, I recommend listing ${brandA}. We offer streamlined features and competitive advantages that would bring great value to your readers.`
+      body: `Hi [Recipient's Name],\n\nI just read your in-depth guide on ${category} solutions. Great breakdown!\n\nGiven the rising demand for lightweight and transparent alternatives to legacy players like ${brandB}, I recommend listing ${brandA}.`
     },
     {
       url: `https://storyflow.so/blog/best-${category.toLowerCase().replace(/\s+/g, '-')}-2026`,
       title: `${brandA}: A Must-Have in Your 2026 ${category} Roundups!`,
-      body: `Hi [Recipient's Name],\n\nI came across your 2026 roundup for ${category} tools. \n\n${brandA} has quickly become a standout alternative with its sleek UI and powerful feature set. Adding ${brandA} alongside options like ${brandB} will give your audience a well-rounded and updated comparison.`
+      body: `Hi [Recipient's Name],\n\nI came across your 2026 roundup for ${category} tools.\n\n${brandA} has quickly become a standout alternative with its sleek UI and powerful feature set.`
     },
     {
       url: `https://www.rock.so/blog/${brandB.toLowerCase()}-alternatives`,
       title: `Feature ${brandA} in Your "${brandB} Alternatives" Article`,
-      body: `Hi [Recipient's Name],\n\nI noticed your popular piece highlighting top alternatives to ${brandB}.\n\n${brandA} is engineered specifically to address common user pain points with modern automation and a clean user experience. I'd love to see it included in your list!`
+      body: `Hi [Recipient's Name],\n\nI noticed your popular piece highlighting top alternatives to ${brandB}.\n\n${brandA} is engineered specifically to address common user pain points with modern automation.`
     }
   ];
 
@@ -230,157 +238,215 @@ function DashboardContent() {
   const isCompareReport = summaryData && (summaryData.brand_a_summary || summaryData.head_to_head_prompts);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* TOP BAR / MODE & AUTH */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-indigo-500" />
-              AEO Citation & Visibility Engine
-            </h1>
-            <p className="text-slate-400 mt-1">
-              Analyze and compare Share of Voice (SoV) across Answer Engines in real time.
-            </p>
+    <div className="min-h-screen bg-[#030712] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased relative overflow-x-hidden">
+      
+      {/* BACKGROUND GLOW ACCENTS */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-gradient-to-b from-indigo-600/15 via-purple-600/5 to-transparent blur-3xl pointer-events-none -z-10" />
+
+      {/* HEADER NAVBAR */}
+      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#030712]/75 border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setSummaryData(null); router.push("/"); }}>
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <BarChart3 className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-400">
+              PulseFlow <span className="text-indigo-400 font-black">AEO</span>
+            </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
-              <button
-                onClick={() => setMode("single")}
-                className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${
-                  mode === "single" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                Single Brand Audit
-              </button>
-              <button
-                onClick={() => setMode("compare")}
-                className={`px-4 py-2 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
-                  mode === "compare" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <Swords className="h-3.5 w-3.5" /> Side-by-Side Comparison
-              </button>
-            </div>
+          <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-slate-400">
+            <a href="#engine" className="hover:text-white transition">Engine</a>
+            <a href="#features" className="hover:text-white transition">Platform</a>
+            <a href="#methodology" className="hover:text-white transition">Methodology</a>
+          </nav>
 
+          <div className="flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+              <div className="flex items-center gap-3 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-xl">
+                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs text-slate-300 font-mono">{user.email?.split("@")[0]}</span>
-                <button onClick={handleSignOut} className="text-slate-400 hover:text-red-400 p-1 transition" title="Sign Out">
-                  <LogOut className="h-4 w-4" />
+                <button onClick={handleSignOut} className="text-slate-400 hover:text-red-400 transition ml-1" title="Sign Out">
+                  <LogOut className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setIsAuthOpen(true)}
-                className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-2"
+                className="px-4 py-2 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 shadow-sm"
               >
-                <User className="h-4 w-4" /> Sign In
+                <User className="h-3.5 w-3.5" /> Sign In
               </button>
             )}
           </div>
         </div>
+      </header>
 
-        {/* INPUT AUDIT FORM */}
-        <form onSubmit={handleStartAudit} className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
-          <div className={`grid grid-cols-1 ${mode === "compare" ? "md:grid-cols-5" : "md:grid-cols-3"} gap-4`}>
-            <div>
-              <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">
-                {mode === "compare" ? "Brand A Name" : "Target Brand Name"}
-              </label>
-              <input
-                type="text"
-                value={brandA}
-                onChange={(e) => setBrandA(e.target.value)}
-                required
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">
-                {mode === "compare" ? "Brand A Domain" : "Target Brand Domain"}
-              </label>
-              <input
-                type="text"
-                value={domainA}
-                onChange={(e) => setDomainA(e.target.value)}
-                required
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-              />
+      {/* MAIN CONTAINER */}
+      <main className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+        
+        {/* HERO SECTION */}
+        {!summaryData && (
+          <section className="text-center max-w-3xl mx-auto space-y-6 pt-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-950/60 border border-indigo-700/50 text-indigo-300 text-xs font-semibold shadow-inner">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Next-Gen Answer Engine Optimization (AEO)</span>
             </div>
 
-            {mode === "compare" && (
-              <>
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-emerald-400 mb-2">Brand B Name</label>
-                  <input
-                    type="text"
-                    value={brandB}
-                    onChange={(e) => setBrandB(e.target.value)}
-                    required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-emerald-400 mb-2">Brand B Domain</label>
-                  <input
-                    type="text"
-                    value={domainB}
-                    onChange={(e) => setDomainB(e.target.value)}
-                    required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </>
-            )}
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-[1.15]">
+              Own Your Brand’s Voice In <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">AI Search</span>.
+            </h1>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase text-slate-400 mb-2">Industry Category</label>
-              <input
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                required
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
-              />
+            <p className="text-base md:text-lg text-slate-400 max-w-2xl mx-auto font-normal leading-relaxed">
+              Measure share of voice across AI platforms. Benchmark against competitors, uncover cited sources, and generate instant remediation code.
+            </p>
+
+            {/* ANSWER ENGINES BADGES */}
+            <div className="pt-2 flex flex-wrap justify-center items-center gap-2 text-xs font-medium text-slate-400">
+              <span className="text-slate-500 mr-1">Evaluates across:</span>
+              <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg">ChatGPT Search</span>
+              <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg">Perplexity AI</span>
+              <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg">Google AI Overviews</span>
+              <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg">Claude</span>
             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={status === "processing"}
-            className="w-full md:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 font-semibold rounded-lg text-white transition flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {status === "processing" ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                {mode === "compare" ? "Running Parallel Comparison..." : "Evaluating 30 Prompts..."}
-              </>
-            ) : (
-              <>
-                <Search className="h-5 w-5" />
-                {mode === "compare" ? `Run Head-to-Head: ${brandA} vs ${brandB}` : `Run 30-Prompt Audit for ${brandA}`}
-              </>
-            )}
-          </button>
-        </form>
-
-        {error && (
-          <div className="bg-red-950/50 border border-red-800 text-red-300 p-4 rounded-xl flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-400" />
-            <span>{error}</span>
-          </div>
+          </section>
         )}
 
+        {/* INTERACTIVE AUDIT SANDBOX */}
+        <section id="engine" className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/70 pb-5">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Zap className="h-5 w-5 text-indigo-400" /> Run Real-Time Citation Engine
+              </h2>
+              <p className="text-xs text-slate-400">Test any brand name and domain against a 30-prompt evaluation taxonomy.</p>
+            </div>
+
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setMode("single")}
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition ${
+                  mode === "single" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Single Brand
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("compare")}
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 ${
+                  mode === "compare" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Swords className="h-3 w-3" /> Compare
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleStartAudit} className="space-y-5">
+            <div className={`grid grid-cols-1 ${mode === "compare" ? "md:grid-cols-5" : "md:grid-cols-3"} gap-4`}>
+              <div>
+                <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">
+                  {mode === "compare" ? "Brand A Name" : "Target Brand Name"}
+                </label>
+                <input
+                  type="text"
+                  value={brandA}
+                  onChange={(e) => setBrandA(e.target.value)}
+                  required
+                  placeholder="e.g. BudgetFlow"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-indigo-400 mb-2">
+                  {mode === "compare" ? "Brand A Domain" : "Target Brand Domain"}
+                </label>
+                <input
+                  type="text"
+                  value={domainA}
+                  onChange={(e) => setDomainA(e.target.value)}
+                  required
+                  placeholder="e.g. budgetflow.app"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+                />
+              </div>
+
+              {mode === "compare" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-emerald-400 mb-2">Brand B Name</label>
+                    <input
+                      type="text"
+                      value={brandB}
+                      onChange={(e) => setBrandB(e.target.value)}
+                      required
+                      placeholder="e.g. YNAB"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-emerald-400 mb-2">Brand B Domain</label>
+                    <input
+                      type="text"
+                      value={domainB}
+                      onChange={(e) => setDomainB(e.target.value)}
+                      required
+                      placeholder="e.g. ynab.com"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-400 mb-2">Industry Category</label>
+                <input
+                  type="text"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  required
+                  placeholder="e.g. Personal Finance App"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={status === "processing"}
+              className="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 disabled:opacity-50"
+            >
+              {status === "processing" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {mode === "compare" ? "Benchmarking Head-to-Head..." : "Evaluating 30 Prompts..."}
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4" />
+                  {mode === "compare" ? `Run Head-to-Head: ${brandA} vs ${brandB}` : `Run AEO Visibility Audit for ${brandA}`}
+                </>
+              )}
+            </button>
+          </form>
+
+          {error && (
+            <div className="bg-red-950/50 border border-red-800/80 text-red-300 p-4 rounded-xl flex items-center gap-3 text-sm">
+              <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+        </section>
+
         {/* ------------------------------------------------------------- */}
-        {/* VIEW 1: SIDE-BY-SIDE HEAD-TO-HEAD COMPARISON REPORT           */}
+        {/* REPORT VIEW 1: SIDE-BY-SIDE HEAD-TO-HEAD BENCHMARK            */}
         {/* ------------------------------------------------------------- */}
         {isCompareReport && (
-          <div className="space-y-8 animate-fadeIn">
-            
-            {/* REPORT HEADER */}
+          <div className="space-y-8 animate-fadeIn pt-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -409,17 +475,16 @@ function DashboardContent() {
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 shadow-md shadow-indigo-600/20"
                 >
-                  <Printer className="h-4 w-4" />
-                  Export PDF
+                  <Printer className="h-4 w-4" /> Export PDF
                 </button>
               </div>
             </div>
 
             {/* BATTLE SCORECARD */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-slate-900 border border-indigo-900/50 p-6 rounded-2xl space-y-3 relative overflow-hidden">
+              <div className="bg-slate-900/90 border border-indigo-900/50 p-6 rounded-2xl space-y-3">
                 <div className="text-xs font-bold text-indigo-400 uppercase tracking-wide">
                   {summaryData.brand_a_summary?.target_brand || brandA} (Target)
                 </div>
@@ -435,7 +500,7 @@ function DashboardContent() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-center items-center text-center space-y-2">
+              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl flex flex-col justify-center items-center text-center space-y-2">
                 <Trophy className="h-8 w-8 text-amber-400" />
                 <h4 className="text-sm font-bold text-slate-200">Outcome Breakdown</h4>
                 <p className="text-xs text-slate-400">
@@ -448,7 +513,7 @@ function DashboardContent() {
                 <span className="text-xs font-mono text-slate-500">Ties / Neutral: {summaryData.ties || 0}</span>
               </div>
 
-              <div className="bg-slate-900 border border-emerald-900/50 p-6 rounded-2xl space-y-3 relative overflow-hidden">
+              <div className="bg-slate-900/90 border border-emerald-900/50 p-6 rounded-2xl space-y-3">
                 <div className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
                   {summaryData.brand_b_summary?.target_brand || brandB} (Competitor)
                 </div>
@@ -473,7 +538,7 @@ function DashboardContent() {
                   activeReportTab === "overview" ? "border-b-2 border-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <BarChart3 className="h-4 w-4" /> Comparison Overview
+                <BarChart3 className="h-4 w-4" /> Comparison Breakdown
               </button>
               <button
                 onClick={() => setActiveReportTab("remediation")}
@@ -485,65 +550,63 @@ function DashboardContent() {
               </button>
             </div>
 
-            {/* TAB 1: COMPARISON OVERVIEW */}
+            {/* TAB 1: COMPARISON PROMPT BREAKDOWN */}
             {activeReportTab === "overview" && (
-              <div className="space-y-8 animate-fadeIn">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Winner Breakdown
-                  </h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-800 text-slate-400 uppercase text-xs">
-                          <th className="py-3 px-4">PROMPT EVALUATED</th>
-                          <th className="py-3 px-4">{summaryData.brand_a_summary?.target_brand || brandA}</th>
-                          <th className="py-3 px-4">{summaryData.brand_b_summary?.target_brand || brandB}</th>
-                          <th className="py-3 px-4">WINNER</th>
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Breakdown
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400 uppercase text-xs">
+                        <th className="py-3 px-4">PROMPT EVALUATED</th>
+                        <th className="py-3 px-4">{summaryData.brand_a_summary?.target_brand || brandA}</th>
+                        <th className="py-3 px-4">{summaryData.brand_b_summary?.target_brand || brandB}</th>
+                        <th className="py-3 px-4">WINNER</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {(summaryData.head_to_head_prompts || []).map((item: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-slate-950/50">
+                          <td className="py-3.5 px-4 font-medium text-slate-200">{item.prompt}</td>
+                          <td className="py-3.5 px-4">
+                            {item.brand_a_mentioned ? (
+                              <span className="px-2.5 py-1 bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs font-bold rounded">
+                                Rank #{item.brand_a_rank || 1}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-500 font-mono">Missing</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {item.brand_b_mentioned ? (
+                              <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold rounded">
+                                Rank #{item.brand_b_rank || 1}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-500 font-mono">Missing</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {item.winner === "brand_a" ? (
+                              <span className="text-xs font-bold text-indigo-400 flex items-center gap-1">
+                                <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_a_summary?.target_brand || brandA}
+                              </span>
+                            ) : item.winner === "brand_b" ? (
+                              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_b_summary?.target_brand || brandB}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-400 flex items-center gap-1">
+                                <Minus className="h-3.5 w-3.5 text-slate-500" /> Tie / Neither
+                              </span>
+                            )}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800">
-                        {(summaryData.head_to_head_prompts || []).map((item: any, idx: number) => (
-                          <tr key={idx} className="hover:bg-slate-950/50">
-                            <td className="py-3.5 px-4 font-medium text-slate-200">{item.prompt}</td>
-                            <td className="py-3.5 px-4">
-                              {item.brand_a_mentioned ? (
-                                <span className="px-2.5 py-1 bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs font-bold rounded">
-                                  Rank #{item.brand_a_rank || 1}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-500 font-mono">Missing</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {item.brand_b_mentioned ? (
-                                <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold rounded">
-                                  Rank #{item.brand_b_rank || 1}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-500 font-mono">Missing</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {item.winner === "brand_a" ? (
-                                <span className="text-xs font-bold text-indigo-400 flex items-center gap-1">
-                                  <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_a_summary?.target_brand || brandA}
-                                </span>
-                              ) : item.winner === "brand_b" ? (
-                                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                                  <Trophy className="h-3.5 w-3.5" /> {summaryData.brand_b_summary?.target_brand || brandB}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-400 flex items-center gap-1">
-                                  <Minus className="h-3.5 w-3.5 text-slate-500" /> Tie / Neither
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -569,7 +632,7 @@ function DashboardContent() {
                     </button>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Paste this <code className="text-indigo-400">&lt;script&gt;</code> tag in the <code className="text-indigo-400">&lt;head&gt;</code> section of {brandA}&apos;s website to signal entity data to AI crawlers.
+                    Paste this <code className="text-indigo-400">&lt;script&gt;</code> tag in the <code className="text-indigo-400">&lt;head&gt;</code> section of {brandA}&apos;s website.
                   </p>
                   <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-indigo-300 overflow-x-auto">
                     <pre className="whitespace-pre-wrap">{generateJsonLdSchema()}</pre>
@@ -608,17 +671,15 @@ function DashboardContent() {
                 </div>
               </div>
             )}
-
           </div>
         )}
 
         {/* ------------------------------------------------------------- */}
-        {/* VIEW 2: SINGLE BRAND AUDIT REPORT                             */}
+        {/* REPORT VIEW 2: SINGLE BRAND VERIFIED AUDIT                    */}
         {/* ------------------------------------------------------------- */}
         {!isCompareReport && summaryData && (
-          <div className="space-y-8 animate-fadeIn">
+          <div className="space-y-8 animate-fadeIn pt-4">
             
-            {/* HEADER */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -647,17 +708,16 @@ function DashboardContent() {
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 shadow-md shadow-indigo-600/20"
                 >
-                  <Printer className="h-4 w-4" />
-                  Export PDF
+                  <Printer className="h-4 w-4" /> Export PDF
                 </button>
               </div>
             </div>
 
             {/* 4 CORE KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
+              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wide">
                   <TrendingUp className="h-4 w-4" /> SHARE OF VOICE
                 </div>
@@ -667,7 +727,7 @@ function DashboardContent() {
                 <p className="text-xs text-slate-400">Across {summaryData.total_prompts_evaluated || 30} evaluated queries</p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
+              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide">
                   <BarChart3 className="h-4 w-4 text-indigo-400" /> AVG POSITION
                 </div>
@@ -677,7 +737,7 @@ function DashboardContent() {
                 <p className="text-xs text-slate-400">When recommended by AI</p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
+              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wide">
                   <FileText className="h-4 w-4" /> TOTAL QUERIES
                 </div>
@@ -685,7 +745,7 @@ function DashboardContent() {
                 <p className="text-xs text-slate-400">Prompts in category taxonomy</p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-2">
+              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-sky-400 uppercase tracking-wide">
                   <Globe className="h-4 w-4" /> PRIMARY SOURCES
                 </div>
@@ -859,15 +919,72 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* AIROPS-STYLE BENTO FEATURE GRID */}
+        {!summaryData && (
+          <section id="features" className="space-y-12 pt-8">
+            <div className="text-center space-y-3 max-w-2xl mx-auto">
+              <h2 className="text-3xl font-extrabold text-white tracking-tight">
+                Engineered for the Answer Engine Era
+              </h2>
+              <p className="text-sm text-slate-400">
+                Traditional SEO tracks search rankings. PulseFlow AEO tracks knowledge synthesis and citation authority across generative AI models.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Feature 1 */}
+              <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition">
+                <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-bold text-white">30-Prompt Category Taxonomies</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Automatically query high-intent buyer prompts across your entire niche to discover exactly where your brand appears and where you have blind spots.
+                </p>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition">
+                <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                  <Swords className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Head-to-Head Benchmarks</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Run parallel audits between your domain and legacy competitors. Gain prompt-by-prompt win/loss analytics and visibility gaps.
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-6 space-y-4 hover:border-slate-700 transition">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Automated Schema & Outreach</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Instantly receive structured JSON-LD entity markup and personalized listicle conquest outreach copy ready to deploy in seconds.
+                </p>
+              </div>
+
+            </div>
+          </section>
+        )}
+
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-      </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="border-t border-slate-800/80 mt-20 py-8 text-center text-xs text-slate-500">
+        <p>&copy; 2026 PulseFlow AEO Engine. Enterprise Answer Engine Optimization Platform.</p>
+      </footer>
+
     </div>
   );
 }
 
 export default function AEODashboard() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#030712] flex items-center justify-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
       <DashboardContent />
     </Suspense>
   );
