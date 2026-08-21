@@ -107,20 +107,22 @@ function DashboardContent() {
     }
   }, [supabase]);
 
+  // Strictly query audits belonging only to the authenticated user
   const fetchAuditHistory = useCallback(async (userId?: string) => {
+    if (!userId) {
+      setAuditHistory([]);
+      return;
+    }
+
     try {
       setLoadingHistory(true);
-      let query = supabase
+      const { data, error } = await supabase
         .from("audit_jobs")
         .select("id, created_at, target_brand, target_domain, audit_type, category, share_of_voice, status, summary_payload")
+        .eq("created_by", userId)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (userId) {
-        query = query.or(`created_by.eq.${userId},created_by.is.null`);
-      }
-
-      const { data, error } = await query;
       if (!error && data) {
         setAuditHistory(data);
       }
@@ -147,6 +149,9 @@ function DashboardContent() {
       if (activeUser) {
         fetchUserProfile(activeUser.id);
         fetchAuditHistory(activeUser.id);
+      } else {
+        setAuditHistory([]);
+        setProfile(null);
       }
     });
 
@@ -769,9 +774,7 @@ function DashboardContent() {
           </section>
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* REPORT VIEW 1: SIDE-BY-SIDE HEAD-TO-HEAD BENCHMARK            */}
-        {/* ------------------------------------------------------------- */}
+        {/* REPORT VIEW 1: SIDE-BY-SIDE HEAD-TO-HEAD BENCHMARK */}
         {isCompareReport && (
           <div className="space-y-8 animate-fadeIn pt-2">
             
@@ -1060,9 +1063,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* REPORT VIEW 2: SINGLE BRAND VERIFIED AUDIT                    */}
-        {/* ------------------------------------------------------------- */}
+        {/* REPORT VIEW 2: SINGLE BRAND VERIFIED AUDIT */}
         {!isCompareReport && summaryData && (
           <div className="space-y-8 animate-fadeIn pt-2">
             

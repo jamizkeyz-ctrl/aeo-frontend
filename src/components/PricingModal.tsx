@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Check, Zap, Crown, X, Loader2, Sparkles, ShieldCheck, UserCheck } from "lucide-react";
+import { createClient } from "@/lib/supabase";
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export default function PricingModal({
 
   const handlePaystackPayment = (plan: "pro" | "agency", amountInKobo: number) => {
     if (!userEmail) {
-      alert("Please sign in first to upgrade your workspace.");
+      alert("Please sign in or create an account first to upgrade your workspace.");
       return;
     }
 
@@ -46,7 +47,25 @@ export default function PricingModal({
             { display_name: "User ID", variable_name: "user_id", value: userId },
           ],
         },
-        callback: function (response: any) {
+        callback: async function (response: any) {
+          // Client-side fallback to immediately upgrade profile row in Supabase
+          if (userId) {
+            try {
+              const supabase = createClient();
+              await supabase
+                .from("profiles")
+                .update({
+                  tier: plan,
+                  audits_limit: plan === "agency" ? 99999 : 50,
+                  audits_used: 0,
+                  updated_at: new Date().toISOString()
+                })
+                .eq("id", userId);
+            } catch (syncErr) {
+              console.error("Client profile sync error:", syncErr);
+            }
+          }
+
           setLoadingPlan(null);
           alert(`Payment successful! Reference: ${response.reference}`);
           onSuccess();
