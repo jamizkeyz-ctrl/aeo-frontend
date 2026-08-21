@@ -27,7 +27,7 @@ export default function PricingModal({
   const loadPaystackScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
       // @ts-ignore
-      if (typeof window !== "undefined" && window.PaystackPop) {
+      if (typeof window !== "undefined" && window.PaystackPop && typeof window.PaystackPop.setup === "function") {
         resolve(true);
         return;
       }
@@ -44,28 +44,6 @@ export default function PricingModal({
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
-  };
-
-  const handleSuccessfulUpgrade = async (plan: "pro" | "agency") => {
-    if (userId) {
-      try {
-        const supabase = createClient();
-        await supabase
-          .from("profiles")
-          .update({
-            tier: plan,
-            audits_limit: plan === "agency" ? 99999 : 50,
-            audits_used: 0,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", userId);
-      } catch (syncErr) {
-        console.error("Client profile sync error:", syncErr);
-      }
-    }
-    setLoadingPlan(null);
-    onSuccess();
-    onClose();
   };
 
   const handlePaystackPayment = async (plan: "pro" | "agency", amountInKobo: number) => {
@@ -93,9 +71,7 @@ export default function PricingModal({
       }
 
       // @ts-ignore
-      const paystack = new (window as any).PaystackPop();
-      
-      paystack.newTransaction({
+      const handler = window.PaystackPop.setup({
         key: paystackKey,
         email: userEmail,
         amount: amountInKobo,
@@ -106,16 +82,43 @@ export default function PricingModal({
             { display_name: "User ID", variable_name: "user_id", value: userId || "" },
           ],
         },
-        onSuccess: (transaction: any) => {
-          handleSuccessfulUpgrade(plan);
+        callback: function (response: any) {
+          if (userId) {
+            const supabase = createClient();
+            supabase
+              .from("profiles")
+              .update({
+                tier: plan,
+                audits_limit: plan === "agency" ? 99999 : 50,
+                audits_used: 0,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", userId)
+              .then(() => {
+                setLoadingPlan(null);
+                onSuccess();
+                onClose();
+              })
+              .catch((err) => {
+                console.error("Profile sync error:", err);
+                setLoadingPlan(null);
+                onSuccess();
+                onClose();
+              });
+          } else {
+            setLoadingPlan(null);
+            onSuccess();
+            onClose();
+          }
         },
-        onCancel: () => {
+        onClose: function () {
           setLoadingPlan(null);
         },
       });
 
+      handler.openIframe();
     } catch (err: any) {
-      console.error("Paystack error:", err);
+      console.error("Paystack execution error:", err);
       setPayError(err.message || "Failed to initialize checkout.");
       setLoadingPlan(null);
     }
@@ -236,7 +239,7 @@ export default function PricingModal({
             </div>
 
             <button
-              onClick={() => handlePaystackPayment("pro", 7500000)} // ₦75,000 in kobo (~$49)
+              onClick={() => handlePaystackPayment("pro", 7500000)} // ₦75,000 in kobo
               disabled={loadingPlan !== null}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
             >
@@ -279,7 +282,7 @@ export default function PricingModal({
             </div>
 
             <button
-              onClick={() => handlePaystackPayment("agency", 22500000)} // ₦225,000 in kobo (~$149)
+              onClick={() => handlePaystackPayment("agency", 22500000)} // ₦225,000 in kobo
               disabled={loadingPlan !== null}
               className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
