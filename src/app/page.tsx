@@ -84,6 +84,7 @@ function DashboardContent() {
   const [copiedSchema, setCopiedSchema] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
+  const [copiedUrlIdx, setCopiedUrlIdx] = useState<number | null>(null);
 
   // Formatted date for PDF report
   const currentDate = new Date().toLocaleDateString("en-US", {
@@ -871,7 +872,7 @@ function DashboardContent() {
             </div>
 
             {/* TAB 1: COMPARISON BREAKDOWN */}
-            {(activeReportTab === "overview" || typeof window !== "undefined") && (
+            {activeReportTab === "overview" && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Breakdown
@@ -931,7 +932,7 @@ function DashboardContent() {
               </div>
             )}
 
-            {/* TAB 2: REMEDIATION & FIXES (Visible when active or on full print view) */}
+            {/* TAB 2: REMEDIATION & FIXES */}
             {activeReportTab === "remediation" && (
               <div className="space-y-8 animate-fadeIn">
                 <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
@@ -967,21 +968,58 @@ function DashboardContent() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {outreachCampaigns.map((camp, idx) => (
-                      <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
+                      <div key={idx} className="remediation-box bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
                         <div className="space-y-3">
                           <div className="flex justify-between items-start gap-2">
-                            <span className="text-xs font-mono text-indigo-400 truncate max-w-[280px]">{camp.url}</span>
+                            {/* Clickable URL + Direct Copy Action */}
+                            <div className="flex items-center gap-2 max-w-[280px] truncate">
+                              <a
+                                href={camp.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-mono text-indigo-400 hover:text-indigo-300 hover:underline truncate flex items-center gap-1 group"
+                                title="Open publication in new tab"
+                              >
+                                <span className="truncate">{camp.url}</span>
+                                <ExternalLink className="h-3 w-3 shrink-0 opacity-70 group-hover:opacity-100" />
+                              </a>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(camp.url);
+                                  setCopiedUrlIdx(idx);
+                                  setTimeout(() => setCopiedUrlIdx(null), 2000);
+                                }}
+                                className="text-[10px] text-slate-500 hover:text-slate-300 shrink-0 font-mono transition"
+                                title="Copy URL"
+                              >
+                                {copiedUrlIdx === idx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                              </button>
+                            </div>
+
+                            {/* Copy Full Email Pitch Button */}
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(`${camp.title}\n\n${camp.body}`);
                                 setCopiedOutreachIdx(idx);
                                 setTimeout(() => setCopiedOutreachIdx(null), 2000);
                               }}
-                              className="no-print p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
+                              className="no-print p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0 flex items-center gap-1 text-[11px] font-semibold"
+                              title="Copy entire email pitch"
                             >
-                              {copiedOutreachIdx === idx ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {copiedOutreachIdx === idx ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                  <span className="text-emerald-400 text-[10px]">Copied Pitch</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-3.5 w-3.5" />
+                                  <span className="text-[10px]">Copy Pitch</span>
+                                </>
+                              )}
                             </button>
                           </div>
+
                           <h4 className="text-sm font-bold text-white leading-snug">{camp.title}</h4>
                           <p className="text-xs text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">{camp.body}</p>
                         </div>
@@ -1234,21 +1272,58 @@ function DashboardContent() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {outreachCampaigns.map((camp, idx) => (
-                      <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
+                      <div key={idx} className="remediation-box bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
                         <div className="space-y-3">
                           <div className="flex justify-between items-start gap-2">
-                            <span className="text-xs font-mono text-indigo-400 truncate max-w-[280px]">{camp.url}</span>
+                            {/* Clickable URL + Direct Copy Action */}
+                            <div className="flex items-center gap-2 max-w-[280px] truncate">
+                              <a
+                                href={camp.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-mono text-indigo-400 hover:text-indigo-300 hover:underline truncate flex items-center gap-1 group"
+                                title="Open publication in new tab"
+                              >
+                                <span className="truncate">{camp.url}</span>
+                                <ExternalLink className="h-3 w-3 shrink-0 opacity-70 group-hover:opacity-100" />
+                              </a>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(camp.url);
+                                  setCopiedUrlIdx(idx);
+                                  setTimeout(() => setCopiedUrlIdx(null), 2000);
+                                }}
+                                className="text-[10px] text-slate-500 hover:text-slate-300 shrink-0 font-mono transition"
+                                title="Copy URL"
+                              >
+                                {copiedUrlIdx === idx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                              </button>
+                            </div>
+
+                            {/* Copy Full Email Pitch Button */}
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(`${camp.title}\n\n${camp.body}`);
                                 setCopiedOutreachIdx(idx);
                                 setTimeout(() => setCopiedOutreachIdx(null), 2000);
                               }}
-                              className="no-print p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
+                              className="no-print p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0 flex items-center gap-1 text-[11px] font-semibold"
+                              title="Copy entire email pitch"
                             >
-                              {copiedOutreachIdx === idx ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {copiedOutreachIdx === idx ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                  <span className="text-emerald-400 text-[10px]">Copied Pitch</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-3.5 w-3.5" />
+                                  <span className="text-[10px]">Copy Pitch</span>
+                                </>
+                              )}
                             </button>
                           </div>
+
                           <h4 className="text-sm font-bold text-white leading-snug">{camp.title}</h4>
                           <p className="text-xs text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">{camp.body}</p>
                         </div>
