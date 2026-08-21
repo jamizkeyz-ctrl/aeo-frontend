@@ -22,7 +22,7 @@ export default function PricingModal({
 
   if (!isOpen) return null;
 
-  const handlePaystackPayment = (plan: "pro" | "agency", amountInCents: number) => {
+  const handlePaystackPayment = (plan: "pro" | "agency", amountInKobo: number) => {
     if (!userEmail) {
       alert("Please sign in first to upgrade your workspace.");
       return;
@@ -30,7 +30,7 @@ export default function PricingModal({
 
     setLoadingPlan(plan);
 
-    const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "pk_test_sample";
+    const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "";
 
     // @ts-ignore
     if (typeof window !== "undefined" && window.PaystackPop) {
@@ -38,8 +38,8 @@ export default function PricingModal({
       const handler = window.PaystackPop.setup({
         key: paystackKey,
         email: userEmail,
-        amount: amountInCents, // e.g. 4900 for $49.00
-        currency: "USD",
+        amount: amountInKobo,
+        currency: "NGN",
         metadata: {
           custom_fields: [
             { display_name: "Plan", variable_name: "plan", value: plan },
@@ -60,7 +60,7 @@ export default function PricingModal({
     } else {
       const script = document.createElement("script");
       script.src = "https://js.paystack.co/v1/inline.js";
-      script.onload = () => handlePaystackPayment(plan, amountInCents);
+      script.onload = () => handlePaystackPayment(plan, amountInKobo);
       document.body.appendChild(script);
     }
   };
@@ -122,7 +122,7 @@ export default function PricingModal({
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-slate-500 shrink-0" />
-                  Top 5 Cited Sources Discovery
+                  Top Cited Sources Discovery
                 </li>
                 <li className="flex items-center gap-2 text-slate-500 line-through">
                   Head-to-Head Benchmarking
@@ -177,7 +177,7 @@ export default function PricingModal({
             </div>
 
             <button
-              onClick={() => handlePaystackPayment("pro", 4900)} // $49.00 in cents
+              onClick={() => handlePaystackPayment("pro", 7500000)} // ₦75,000 in kobo (~$49)
               disabled={loadingPlan !== null}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
             >
@@ -220,7 +220,7 @@ export default function PricingModal({
             </div>
 
             <button
-              onClick={() => handlePaystackPayment("agency", 14900)} // $149.00 in cents
+              onClick={() => handlePaystackPayment("agency", 22500000)} // ₦225,000 in kobo (~$149)
               disabled={loadingPlan !== null}
               className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
@@ -233,7 +233,7 @@ export default function PricingModal({
         {/* Security Badge */}
         <div className="text-center flex items-center justify-center gap-2 text-xs text-slate-500 pt-2">
           <ShieldCheck className="h-4 w-4 text-emerald-400" />
-          Secured checkout via Paystack. Supports all major international debit and credit cards in USD.
+          Secured checkout via Paystack. Supports all debit/credit cards, Apple Pay, and bank transfers.
         </div>
 
       </div>
