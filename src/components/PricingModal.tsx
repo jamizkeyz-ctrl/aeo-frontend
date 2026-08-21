@@ -46,6 +46,28 @@ export default function PricingModal({
     });
   };
 
+  const handleSuccessfulUpgrade = async (plan: "pro" | "agency") => {
+    if (userId) {
+      try {
+        const supabase = createClient();
+        await supabase
+          .from("profiles")
+          .update({
+            tier: plan,
+            audits_limit: plan === "agency" ? 99999 : 50,
+            audits_used: 0,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", userId);
+      } catch (syncErr) {
+        console.error("Client profile sync error:", syncErr);
+      }
+    }
+    setLoadingPlan(null);
+    onSuccess();
+    onClose();
+  };
+
   const handlePaystackPayment = async (plan: "pro" | "agency", amountInKobo: number) => {
     setPayError(null);
 
@@ -71,7 +93,9 @@ export default function PricingModal({
       }
 
       // @ts-ignore
-      const handler = window.PaystackPop.setup({
+      const paystack = new (window as any).PaystackPop();
+      
+      paystack.newTransaction({
         key: paystackKey,
         email: userEmail,
         amount: amountInKobo,
@@ -82,34 +106,14 @@ export default function PricingModal({
             { display_name: "User ID", variable_name: "user_id", value: userId || "" },
           ],
         },
-        callback: async function (response: any) {
-          if (userId) {
-            try {
-              const supabase = createClient();
-              await supabase
-                .from("profiles")
-                .update({
-                  tier: plan,
-                  audits_limit: plan === "agency" ? 99999 : 50,
-                  audits_used: 0,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq("id", userId);
-            } catch (syncErr) {
-              console.error("Client profile sync error:", syncErr);
-            }
-          }
-
-          setLoadingPlan(null);
-          onSuccess();
-          onClose();
+        onSuccess: (transaction: any) => {
+          handleSuccessfulUpgrade(plan);
         },
-        onClose: function () {
+        onCancel: () => {
           setLoadingPlan(null);
         },
       });
 
-      handler.openIframe();
     } catch (err: any) {
       console.error("Paystack error:", err);
       setPayError(err.message || "Failed to initialize checkout.");
@@ -121,10 +125,8 @@ export default function PricingModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
       <div className="relative w-full max-w-5xl bg-[#030712] border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 overflow-hidden max-h-[90vh] overflow-y-auto">
         
-        {/* Glow decoration */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 blur-[100px] pointer-events-none -z-10" />
 
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-6 right-6 text-slate-400 hover:text-white p-2 rounded-xl bg-slate-900 border border-slate-800 transition"
@@ -132,7 +134,6 @@ export default function PricingModal({
           <X className="h-5 w-5" />
         </button>
 
-        {/* Header */}
         <div className="text-center space-y-3 max-w-xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-950/80 border border-indigo-700/50 text-indigo-300 text-xs font-semibold">
             <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
@@ -153,7 +154,6 @@ export default function PricingModal({
           </div>
         )}
 
-        {/* 3-Tier Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Free Tier */}
@@ -289,7 +289,6 @@ export default function PricingModal({
 
         </div>
 
-        {/* Security Badge */}
         <div className="text-center flex items-center justify-center gap-2 text-xs text-slate-500 pt-2">
           <ShieldCheck className="h-4 w-4 text-emerald-400" />
           Secured checkout via Paystack. Supports all debit/credit cards, Apple Pay, and bank transfers.
