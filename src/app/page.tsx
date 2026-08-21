@@ -54,7 +54,7 @@ function DashboardContent() {
   const [activeInteractiveTab, setActiveInteractiveTab] = useState<"sov" | "competitor" | "remediation">("sov");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Auth & Subscription States
+  // Auth & Profile States
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -77,12 +77,12 @@ function DashboardContent() {
   const [summaryData, setSummaryData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // UI Interactive States
+  // UI States
   const [copiedSchema, setCopiedSchema] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
 
-  // 1. Fetch User Profile (Tier & Usage Quota)
+  // Fetch User Profile
   const fetchUserProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -98,7 +98,7 @@ function DashboardContent() {
     }
   }, [supabase]);
 
-  // 2. Fetch Audit History
+  // Fetch Audit History
   const fetchAuditHistory = useCallback(async (userId?: string) => {
     try {
       setLoadingHistory(true);
@@ -123,7 +123,6 @@ function DashboardContent() {
     }
   }, [supabase]);
 
-  // 3. Auth Session Listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const activeUser = session?.user ?? null;
@@ -146,7 +145,6 @@ function DashboardContent() {
     return () => subscription.unsubscribe();
   }, [fetchAuditHistory, fetchUserProfile, supabase]);
 
-  // 4. Query Loader (?report=...)
   useEffect(() => {
     const reportParam = searchParams.get("report");
     if (reportParam && reportParam !== jobId) {
@@ -155,7 +153,6 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
-  // 5. Polling & Report Data Ingestion
   useEffect(() => {
     if (!jobId || status !== "processing") return;
 
@@ -204,7 +201,6 @@ function DashboardContent() {
   const handleStartAudit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check usage quota for free-tier users
     if (profile && profile.tier === "free" && profile.audits_used >= profile.audits_limit) {
       setIsPricingOpen(true);
       return;
@@ -357,14 +353,12 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-[#030712] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased relative overflow-x-hidden">
       
-      {/* Paystack Inline Script */}
       <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
 
-      {/* GLOW DECORATIONS */}
+      {/* GLOW BACKGROUNDS */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[550px] bg-gradient-to-b from-indigo-600/20 via-purple-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
-      <div className="absolute top-[800px] right-0 w-[500px] h-[500px] bg-indigo-900/10 blur-[140px] pointer-events-none -z-10" />
 
-      {/* FROZEN FROSTED NAVBAR */}
+      {/* FROSTED NAVBAR */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-xl bg-[#030712]/85 border-b border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setSummaryData(null); router.push("/"); }}>
@@ -376,18 +370,18 @@ function DashboardContent() {
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            <a href="#engine" className="hover:text-white transition">Live Engine</a>
-            {user && <a href="#history" className="hover:text-white transition">Audit History</a>}
-            <a href="#solutions" className="hover:text-white transition">Platform</a>
-            <a href="#architecture" className="hover:text-white transition">Architecture</a>
-            <a href="#faq" className="hover:text-white transition">FAQ</a>
-          </nav>
+          {!user && (
+            <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <a href="#engine" className="hover:text-white transition">Live Engine</a>
+              <a href="#solutions" className="hover:text-white transition">Platform</a>
+              <a href="#architecture" className="hover:text-white transition">Architecture</a>
+              <a href="#faq" className="hover:text-white transition">FAQ</a>
+            </nav>
+          )}
 
           <div className="flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-inner">
-                {/* Plan Badge / Upgrade Trigger */}
                 <button
                   onClick={() => setIsPricingOpen(true)}
                   className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 transition ${
@@ -428,11 +422,11 @@ function DashboardContent() {
         </div>
       </header>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="max-w-7xl mx-auto px-6 pt-28 pb-12 space-y-24">
+      {/* MAIN CONTAINER */}
+      <main className="max-w-7xl mx-auto px-6 pt-28 pb-12 space-y-16">
         
-        {/* HERO SECTION */}
-        {!summaryData && (
+        {/* VIEW A: UNLOGGED MARKETING HERO */}
+        {!summaryData && !user && (
           <section className="text-center max-w-4xl mx-auto space-y-8 pt-6">
             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-indigo-950/70 border border-indigo-600/40 text-indigo-300 text-xs font-semibold shadow-inner">
               <Sparkles className="h-4 w-4 text-indigo-400 animate-pulse" />
@@ -465,7 +459,6 @@ function DashboardContent() {
               </button>
             </div>
 
-            {/* ENGINE BADGES */}
             <div className="pt-6 flex flex-wrap justify-center items-center gap-2.5 text-xs font-medium text-slate-400">
               <span className="text-slate-500 mr-2 uppercase tracking-wider font-semibold text-[11px]">Real-Time Data From:</span>
               <span className="px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-lg shadow-sm">ChatGPT Search</span>
@@ -476,150 +469,177 @@ function DashboardContent() {
           </section>
         )}
 
-        {/* LIVE EVALUATION SANDBOX */}
-        <section id="engine" className="scroll-mt-28 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+        {/* VIEW B: AUTHENTICATED WORKSPACE GREETING */}
+        {!summaryData && user && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-6 gap-4">
             <div>
-              <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">
-                <Zap className="h-4 w-4" /> Live Evaluation Sandbox
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white">
-                Launch Real-Time 30-Prompt Audit
-              </h2>
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> WORKSPACE ACTIVE
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black text-white mt-1">
+                AEO Citation & Visibility Engine
+              </h1>
+              <p className="text-xs text-slate-400 mt-1">
+                Manage brand visibility taxonomies and monitor competitor movements across generative AI models.
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
-              {profile && (
-                <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-                  Quotas: <strong className="text-indigo-400">{profile.audits_used}</strong> / {profile.audits_limit} used
-                </span>
-              )}
-              <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setMode("single")}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-                    mode === "single" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  Single Brand
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("compare")}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
-                    mode === "compare" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <Swords className="h-3.5 w-3.5" /> Side-by-Side
-                </button>
-              </div>
+              <button
+                onClick={() => setIsPricingOpen(true)}
+                className="px-4 py-2 bg-indigo-600/10 border border-indigo-500/30 hover:border-indigo-500/60 text-indigo-300 text-xs font-bold rounded-xl transition flex items-center gap-2"
+              >
+                <Crown className="h-3.5 w-3.5 text-amber-400" />
+                {profile?.tier === "agency" ? "Agency Unlimited" : profile?.tier === "pro" ? "Pro Plan Active" : "Upgrade from Free ($49)"}
+              </button>
             </div>
           </div>
+        )}
 
-          <form onSubmit={handleStartAudit} className="space-y-6">
-            <div className={`grid grid-cols-1 ${mode === "compare" ? "md:grid-cols-5" : "md:grid-cols-3"} gap-4`}>
+        {/* LIVE EVALUATION SANDBOX */}
+        {!summaryData && (
+          <section id="engine" className="scroll-mt-28 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2">
-                  {mode === "compare" ? "Brand A Name" : "Target Brand Name"}
-                </label>
-                <input
-                  type="text"
-                  value={brandA}
-                  onChange={(e) => setBrandA(e.target.value)}
-                  required
-                  placeholder="e.g. BudgetFlow"
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
-                />
+                <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  <Zap className="h-4 w-4" /> Live Evaluation Sandbox
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-white">
+                  Launch 30-Prompt Visibility Audit
+                </h2>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2">
-                  {mode === "compare" ? "Brand A Domain" : "Target Brand Domain"}
-                </label>
-                <input
-                  type="text"
-                  value={domainA}
-                  onChange={(e) => setDomainA(e.target.value)}
-                  required
-                  placeholder="e.g. budgetflow.app"
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
-                />
-              </div>
-
-              {mode === "compare" && (
-                <>
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">Brand B Name</label>
-                    <input
-                      type="text"
-                      value={brandB}
-                      onChange={(e) => setBrandB(e.target.value)}
-                      required
-                      placeholder="e.g. YNAB"
-                      className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition shadow-inner"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">Brand B Domain</label>
-                    <input
-                      type="text"
-                      value={domainB}
-                      onChange={(e) => setDomainB(e.target.value)}
-                      required
-                      placeholder="e.g. ynab.com"
-                      className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition shadow-inner"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Industry Category</label>
-                <input
-                  type="text"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  required
-                  placeholder="e.g. Personal Finance App"
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
-                />
+              <div className="flex items-center gap-3">
+                {profile && (
+                  <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+                    Quotas: <strong className="text-indigo-400">{profile.audits_used}</strong> / {profile.audits_limit} used
+                  </span>
+                )}
+                <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setMode("single")}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+                      mode === "single" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    Single Brand
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("compare")}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+                      mode === "compare" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Swords className="h-3.5 w-3.5" /> Side-by-Side
+                  </button>
+                </div>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={status === "processing"}
-              className="w-full md:w-auto px-9 py-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 disabled:opacity-50"
-            >
-              {status === "processing" ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  {mode === "compare" ? "Parallel Evaluation Running..." : "Evaluating 30 High-Intent Prompts..."}
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4" />
-                  {mode === "compare" ? `Run Head-to-Head: ${brandA} vs ${brandB}` : `Run 30-Prompt Audit for ${brandA}`}
-                </>
-              )}
-            </button>
-          </form>
+            <form onSubmit={handleStartAudit} className="space-y-6">
+              <div className={`grid grid-cols-1 ${mode === "compare" ? "md:grid-cols-5" : "md:grid-cols-3"} gap-4`}>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2">
+                    {mode === "compare" ? "Brand A Name" : "Target Brand Name"}
+                  </label>
+                  <input
+                    type="text"
+                    value={brandA}
+                    onChange={(e) => setBrandA(e.target.value)}
+                    required
+                    placeholder="e.g. BudgetFlow"
+                    className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
+                  />
+                </div>
 
-          {error && (
-            <div className="bg-red-950/50 border border-red-800/80 text-red-300 p-4 rounded-xl flex items-center gap-3 text-sm">
-              <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-        </section>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400 mb-2">
+                    {mode === "compare" ? "Brand A Domain" : "Target Brand Domain"}
+                  </label>
+                  <input
+                    type="text"
+                    value={domainA}
+                    onChange={(e) => setDomainA(e.target.value)}
+                    required
+                    placeholder="e.g. budgetflow.app"
+                    className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
+                  />
+                </div>
 
-        {/* ------------------------------------------------------------- */}
-        {/* WORKSPACE AUDIT HISTORY TABLE (Shown if logged in)            */}
-        {/* ------------------------------------------------------------- */}
+                {mode === "compare" && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">Brand B Name</label>
+                      <input
+                        type="text"
+                        value={brandB}
+                        onChange={(e) => setBrandB(e.target.value)}
+                        required
+                        placeholder="e.g. YNAB"
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition shadow-inner"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">Brand B Domain</label>
+                      <input
+                        type="text"
+                        value={domainB}
+                        onChange={(e) => setDomainB(e.target.value)}
+                        required
+                        placeholder="e.g. ynab.com"
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition shadow-inner"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Industry Category</label>
+                  <input
+                    type="text"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    required
+                    placeholder="e.g. Personal Finance App"
+                    className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={status === "processing"}
+                className="w-full md:w-auto px-9 py-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 disabled:opacity-50"
+              >
+                {status === "processing" ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    {mode === "compare" ? "Parallel Evaluation Running..." : "Evaluating 30 High-Intent Prompts..."}
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4" />
+                    {mode === "compare" ? `Run Head-to-Head: ${brandA} vs ${brandB}` : `Run 30-Prompt Audit for ${brandA}`}
+                  </>
+                )}
+              </button>
+            </form>
+
+            {error && (
+              <div className="bg-red-950/50 border border-red-800/80 text-red-300 p-4 rounded-xl flex items-center gap-3 text-sm">
+                <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* WORKSPACE AUDIT HISTORY TABLE */}
         {!summaryData && user && (
-          <section id="history" className="scroll-mt-28 space-y-6">
+          <section id="history" className="space-y-6">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div className="flex items-center gap-2.5">
                 <History className="h-5 w-5 text-indigo-400" />
@@ -1186,10 +1206,9 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* MARKETING SECTIONS */}
-        {!summaryData && (
+        {/* MARKETING SECTIONS (Only shown if unauthenticated and not viewing report) */}
+        {!summaryData && !user && (
           <>
-            {/* STATS STRIP */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6 py-6">
               <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-6 text-center space-y-1">
                 <div className="text-3xl font-black text-indigo-400">94.2%</div>
@@ -1205,7 +1224,6 @@ function DashboardContent() {
               </div>
             </section>
 
-            {/* INTERACTIVE PRODUCT TABS */}
             <section id="solutions" className="scroll-mt-28 space-y-12">
               <div className="text-center space-y-3 max-w-2xl mx-auto">
                 <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Platform Capabilities</div>
@@ -1329,7 +1347,6 @@ function DashboardContent() {
               </div>
             </section>
 
-            {/* PIPELINE ARCHITECTURE SECTION */}
             <section id="architecture" className="scroll-mt-28 space-y-12">
               <div className="text-center space-y-3 max-w-2xl mx-auto">
                 <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Methodology & Workflow</div>
@@ -1384,7 +1401,6 @@ function DashboardContent() {
               </div>
             </section>
 
-            {/* FAQ SECTION */}
             <section id="faq" className="scroll-mt-28 space-y-8 max-w-3xl mx-auto">
               <div className="text-center space-y-3">
                 <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Got Questions?</div>
@@ -1410,30 +1426,6 @@ function DashboardContent() {
                     )}
                   </div>
                 ))}
-              </div>
-            </section>
-
-            {/* BOTTOM CALL TO ACTION */}
-            <section className="bg-gradient-to-r from-indigo-900/40 via-purple-900/20 to-slate-900 border border-indigo-500/20 rounded-3xl p-8 sm:p-12 text-center space-y-6 shadow-2xl">
-              <h2 className="text-3xl sm:text-4xl font-black text-white">
-                Ready to Track Your Brand Across AI Search?
-              </h2>
-              <p className="text-slate-400 text-sm max-w-xl mx-auto">
-                Run an evaluation today. Discover which AI platforms are citing your competitors and start conquering your category keywords.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <button
-                  onClick={scrollToEngine}
-                  className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30"
-                >
-                  Start Free Audit <ArrowRight className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setIsPricingOpen(true)}
-                  className="px-8 py-3.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
-                >
-                  View Pricing Tiers
-                </button>
               </div>
             </section>
           </>
