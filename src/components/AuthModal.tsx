@@ -1,16 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import { Loader2, Mail, Lock, CheckCircle2, X } from "lucide-react";
 
-export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialMode?: "signin" | "signup";
+}
+
+export default function AuthModal({
+  isOpen,
+  onClose,
+  initialMode = "signin",
+}: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Sync state whenever the modal opens or initialMode changes
+  useEffect(() => {
+    if (isOpen) {
+      setIsSignUp(initialMode === "signup");
+      setError(null);
+      setMessage(null);
+    }
+  }, [isOpen, initialMode]);
 
   if (!isOpen) return null;
   const supabase = createClient();
@@ -30,7 +49,10 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
         if (error) throw error;
         setMessage("Account created! Check your email to confirm registration.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) throw error;
         onClose();
       }
@@ -55,8 +77,18 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean; onClos
           {isSignUp ? "Create Workspace Account" : "Sign In to PulseFlow AEO"}
         </h3>
 
-        {error && <div className="p-3 bg-red-950/50 border border-red-800 text-red-300 text-xs rounded-lg">{error}</div>}
-        {message && <div className="p-3 bg-emerald-950/50 border border-emerald-800 text-emerald-300 text-xs rounded-lg flex items-center gap-2"><CheckCircle2 className="h-4 w-4 shrink-0" />{message}</div>}
+        {error && (
+          <div className="p-3 bg-red-950/50 border border-red-800 text-red-300 text-xs rounded-lg">
+            {error}
+          </div>
+        )}
+        
+        {message && (
+          <div className="p-3 bg-emerald-950/50 border border-emerald-800 text-emerald-300 text-xs rounded-lg flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {message}
+          </div>
+        )}
 
         <form onSubmit={handleAuth} className="space-y-4">
           <div>

@@ -20,6 +20,8 @@ import {
   Globe, 
   TrendingUp, 
   FileText, 
+  User,
+  UserPlus,
   LogOut, 
   Trophy, 
   Minus, 
@@ -58,6 +60,7 @@ function DashboardContent() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState<"signin" | "signup">("signin");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
 
   // History State
@@ -278,7 +281,6 @@ function DashboardContent() {
     router.push(`?report=${pastJobId}`);
   };
 
-  // Dynamic Extractors: Real sources from audit job or high-intent fallbacks
   const realCitedSources = (summaryData?.cited_sources || summaryData?.top_sources || [
     "https://techcrunch.com",
     "https://www.producthunt.com",
@@ -300,7 +302,6 @@ function DashboardContent() {
     }
   };
 
-  // Dynamic Context-Aware Outreach Emails
   const outreachCampaigns = [
     {
       url: realCitedSources[0],
@@ -344,7 +345,6 @@ function DashboardContent() {
     )}\n</script>`;
   };
 
-  // Generate dynamic, context-specific remediation recommendations
   const getActionRecommendation = (item: any, idx: number) => {
     if (item.brand_mentioned || item.mentioned) {
       return `Maintain citation frequency. Reinforce primary anchor terms and update target entity schema attributes.`;
@@ -432,20 +432,27 @@ function DashboardContent() {
                 </button>
               </div>
             ) : (
-              <>
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
-                  onClick={() => setIsAuthOpen(true)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white transition"
+                  onClick={() => {
+                    setAuthInitialMode("signin");
+                    setIsAuthOpen(true);
+                  }}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white transition"
                 >
                   Sign In
                 </button>
                 <button
-                  onClick={scrollToEngine}
-                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98]"
+                  onClick={() => {
+                    setAuthInitialMode("signup");
+                    setIsAuthOpen(true);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  Start For Free <ArrowRight className="h-3.5 w-3.5" />
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Create Account
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -475,16 +482,19 @@ function DashboardContent() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
               <button
-                onClick={scrollToEngine}
-                className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 hover:scale-[1.02]"
+                onClick={() => {
+                  setAuthInitialMode("signup");
+                  setIsAuthOpen(true);
+                }}
+                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 hover:scale-[1.02]"
               >
-                Run Free Visibility Audit <ChevronRight className="h-4 w-4" />
+                Get Started Free <ChevronRight className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setIsPricingOpen(true)}
+                onClick={scrollToEngine}
                 className="w-full sm:w-auto px-8 py-4 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition flex items-center justify-center gap-2"
               >
-                <Crown className="h-4 w-4 text-amber-400" /> View Pricing & Plans
+                <Search className="h-4 w-4 text-indigo-400" /> Run Quick Audit
               </button>
             </div>
 
@@ -1579,7 +1589,11 @@ function DashboardContent() {
           </>
         )}
 
-        <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        <AuthModal 
+          isOpen={isAuthOpen} 
+          initialMode={authInitialMode}
+          onClose={() => setIsAuthOpen(false)} 
+        />
         <PricingModal 
           isOpen={isPricingOpen} 
           onClose={() => setIsPricingOpen(false)} 
