@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Zap, Crown, X, Loader2, Sparkles, ShieldCheck, UserCheck } from "lucide-react";
+import { Check, Zap, Crown, X, Loader2, Sparkles, ShieldCheck, UserCheck, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 
 interface PricingModalProps {
@@ -20,21 +20,56 @@ export default function PricingModal({
   onSuccess,
 }: PricingModalProps) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handlePaystackPayment = (plan: "pro" | "agency", amountInKobo: number) => {
+  const loadPaystackScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      // @ts-ignore
+      if (typeof window !== "undefined" && window.PaystackPop) {
+        resolve(true);
+        return;
+      }
+      const existingScript = document.getElementById("paystack-inline-js");
+      if (existingScript) {
+        existingScript.onload = () => resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.id = "paystack-inline-js";
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePaystackPayment = async (plan: "pro" | "agency", amountInKobo: number) => {
+    setPayError(null);
+
     if (!userEmail) {
-      alert("Please sign in or create an account first to upgrade your workspace.");
+      setPayError("Please sign in or create an account first to upgrade your workspace.");
       return;
     }
 
     setLoadingPlan(plan);
 
-    const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || "";
+    const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
-    // @ts-ignore
-    if (typeof window !== "undefined" && window.PaystackPop) {
+    if (!paystackKey) {
+      setLoadingPlan(null);
+      setPayError("Paystack Public Key is not configured on the client. Please verify Vercel environment variables.");
+      return;
+    }
+
+    try {
+      const scriptLoaded = await loadPaystackScript();
+      if (!scriptLoaded) {
+        throw new Error("Unable to load Paystack payment gateway. Please check your network connection.");
+      }
+
       // @ts-ignore
       const handler = window.PaystackPop.setup({
         key: paystackKey,
@@ -44,11 +79,10 @@ export default function PricingModal({
         metadata: {
           custom_fields: [
             { display_name: "Plan", variable_name: "plan", value: plan },
-            { display_name: "User ID", variable_name: "user_id", value: userId },
+            { display_name: "User ID", variable_name: "user_id", value: userId || "" },
           ],
         },
         callback: async function (response: any) {
-          // Client-side fallback to immediately upgrade profile row in Supabase
           if (userId) {
             try {
               const supabase = createClient();
@@ -58,7 +92,7 @@ export default function PricingModal({
                   tier: plan,
                   audits_limit: plan === "agency" ? 99999 : 50,
                   audits_used: 0,
-                  updated_at: new Date().toISOString()
+                  updated_at: new Date().toISOString(),
                 })
                 .eq("id", userId);
             } catch (syncErr) {
@@ -67,7 +101,6 @@ export default function PricingModal({
           }
 
           setLoadingPlan(null);
-          alert(`Payment successful! Reference: ${response.reference}`);
           onSuccess();
           onClose();
         },
@@ -75,12 +108,12 @@ export default function PricingModal({
           setLoadingPlan(null);
         },
       });
+
       handler.openIframe();
-    } else {
-      const script = document.createElement("script");
-      script.src = "https://js.paystack.co/v1/inline.js";
-      script.onload = () => handlePaystackPayment(plan, amountInKobo);
-      document.body.appendChild(script);
+    } catch (err: any) {
+      console.error("Paystack error:", err);
+      setPayError(err.message || "Failed to initialize checkout.");
+      setLoadingPlan(null);
     }
   };
 
@@ -112,6 +145,13 @@ export default function PricingModal({
             Select a tier to track Share of Voice across ChatGPT, Perplexity, Claude, and Google AI Overviews.
           </p>
         </div>
+
+        {payError && (
+          <div className="p-3 bg-red-950/60 border border-red-800 text-red-300 text-xs rounded-xl flex items-center gap-2 max-w-xl mx-auto">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+            <span>{payError}</span>
+          </div>
+        )}
 
         {/* 3-Tier Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
