@@ -33,7 +33,10 @@ import {
   History,
   Clock,
   ExternalLink as OpenIcon,
-  Crown
+  Crown,
+  ShieldCheck,
+  Calendar,
+  Building2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
@@ -82,7 +85,13 @@ function DashboardContent() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
 
-  // Fetch User Profile
+  // Formatted date for PDF report
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
+
   const fetchUserProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -98,7 +107,6 @@ function DashboardContent() {
     }
   }, [supabase]);
 
-  // Fetch Audit History
   const fetchAuditHistory = useCallback(async (userId?: string) => {
     try {
       setLoadingHistory(true);
@@ -356,10 +364,10 @@ function DashboardContent() {
       <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
 
       {/* GLOW BACKGROUNDS */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[550px] bg-gradient-to-b from-indigo-600/20 via-purple-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
+      <div className="no-print absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[550px] bg-gradient-to-b from-indigo-600/20 via-purple-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
 
-      {/* FROSTED NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-xl bg-[#030712]/85 border-b border-slate-800/80 transition-all">
+      {/* FROSTED NAVBAR (Hidden on print) */}
+      <header className="no-print fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-xl bg-[#030712]/85 border-b border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setSummaryData(null); router.push("/"); }}>
             <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 border border-indigo-400/30">
@@ -471,7 +479,7 @@ function DashboardContent() {
 
         {/* VIEW B: AUTHENTICATED WORKSPACE GREETING */}
         {!summaryData && user && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-6 gap-4">
+          <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-6 gap-4">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> WORKSPACE ACTIVE
@@ -496,9 +504,9 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* LIVE EVALUATION SANDBOX */}
+        {/* LIVE EVALUATION SANDBOX (Hidden on Print) */}
         {!summaryData && (
-          <section id="engine" className="scroll-mt-28 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
+          <section id="engine" className="no-print scroll-mt-28 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
               <div>
@@ -637,9 +645,9 @@ function DashboardContent() {
           </section>
         )}
 
-        {/* WORKSPACE AUDIT HISTORY TABLE */}
+        {/* WORKSPACE AUDIT HISTORY TABLE (Hidden on Print) */}
         {!summaryData && user && (
-          <section id="history" className="space-y-6">
+          <section id="history" className="no-print space-y-6">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div className="flex items-center gap-2.5">
                 <History className="h-5 w-5 text-indigo-400" />
@@ -734,8 +742,32 @@ function DashboardContent() {
         {/* REPORT VIEW 1: SIDE-BY-SIDE HEAD-TO-HEAD BENCHMARK            */}
         {/* ------------------------------------------------------------- */}
         {isCompareReport && (
-          <div className="space-y-8 animate-fadeIn pt-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-8 animate-fadeIn pt-2">
+            
+            {/* EXECUTIVE PDF HEADER (Visible only on Print) */}
+            <div className="hidden print:block border-b-2 border-indigo-500 pb-4 mb-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="text-[10px] font-mono tracking-widest text-indigo-400 uppercase">
+                    CONFIDENTIAL &bull; EXECUTIVE AEO BENCHMARK REPORT
+                  </div>
+                  <h1 className="text-2xl font-black text-white mt-1">
+                    {summaryData.brand_a_summary?.target_brand || brandA} vs {summaryData.brand_b_summary?.target_brand || brandB}
+                  </h1>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Category: {category} &bull; Target Domain: {domainA} &bull; Competitor: {domainB}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-black text-indigo-400">PulseFlow AEO</div>
+                  <div className="text-[10px] text-slate-400">{currentDate}</div>
+                  <div className="text-[9px] text-slate-500 font-mono">Job ID: {jobId?.substring(0, 8)}...</div>
+                </div>
+              </div>
+            </div>
+
+            {/* SCREEN REPORT HEADER (Hidden on Print) */}
+            <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => { setSummaryData(null); router.push("/"); }} 
@@ -771,8 +803,8 @@ function DashboardContent() {
             </div>
 
             {/* BATTLE SCORECARD */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-slate-900/90 border border-indigo-900/50 p-6 rounded-2xl space-y-3 shadow-xl">
+            <div className="print-avoid-break grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="kpi-card bg-slate-900/90 border border-indigo-900/50 p-6 rounded-2xl space-y-3 shadow-xl">
                 <div className="text-xs font-bold text-indigo-400 uppercase tracking-wide">
                   {summaryData.brand_a_summary?.target_brand || brandA} (Target)
                 </div>
@@ -788,7 +820,7 @@ function DashboardContent() {
                 </div>
               </div>
 
-              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl flex flex-col justify-center items-center text-center space-y-2 shadow-xl">
+              <div className="kpi-card bg-slate-900/90 border border-slate-800 p-6 rounded-2xl flex flex-col justify-center items-center text-center space-y-2 shadow-xl">
                 <Trophy className="h-9 w-9 text-amber-400" />
                 <h4 className="text-sm font-bold text-slate-200">Outcome Breakdown</h4>
                 <p className="text-xs text-slate-400">
@@ -801,7 +833,7 @@ function DashboardContent() {
                 <span className="text-xs font-mono text-slate-500">Ties / Neutral: {summaryData.ties || 0}</span>
               </div>
 
-              <div className="bg-slate-900/90 border border-emerald-900/50 p-6 rounded-2xl space-y-3 shadow-xl">
+              <div className="kpi-card bg-slate-900/90 border border-emerald-900/50 p-6 rounded-2xl space-y-3 shadow-xl">
                 <div className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
                   {summaryData.brand_b_summary?.target_brand || brandB} (Competitor)
                 </div>
@@ -818,8 +850,8 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* TAB SELECTOR */}
-            <div className="border-b border-slate-800 flex gap-8">
+            {/* TAB SELECTOR (Hidden on print) */}
+            <div className="no-print border-b border-slate-800 flex gap-8">
               <button
                 onClick={() => setActiveReportTab("overview")}
                 className={`pb-4 text-sm font-bold flex items-center gap-2 transition ${
@@ -839,8 +871,8 @@ function DashboardContent() {
             </div>
 
             {/* TAB 1: COMPARISON BREAKDOWN */}
-            {activeReportTab === "overview" && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+            {(activeReportTab === "overview" || typeof window !== "undefined") && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Breakdown
                 </h3>
@@ -899,10 +931,10 @@ function DashboardContent() {
               </div>
             )}
 
-            {/* TAB 2: REMEDIATION & FIXES */}
+            {/* TAB 2: REMEDIATION & FIXES (Visible when active or on full print view) */}
             {activeReportTab === "remediation" && (
               <div className="space-y-8 animate-fadeIn">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
                       <Code2 className="h-5 w-5 text-indigo-400" /> Automated JSON-LD Schema ({brandA})
@@ -913,7 +945,7 @@ function DashboardContent() {
                         setCopiedSchema(true);
                         setTimeout(() => setCopiedSchema(false), 2000);
                       }}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition"
+                      className="no-print px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition"
                     >
                       {copiedSchema ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                       {copiedSchema ? "Copied!" : "Copy Code"}
@@ -927,7 +959,7 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
                   <div className="flex items-center gap-2">
                     <Mail className="h-5 w-5 text-indigo-400" />
                     <h3 className="text-lg font-bold text-white">Competitor Conquest Outreach Campaigns</h3>
@@ -945,7 +977,7 @@ function DashboardContent() {
                                 setCopiedOutreachIdx(idx);
                                 setTimeout(() => setCopiedOutreachIdx(null), 2000);
                               }}
-                              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
+                              className="no-print p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
                             >
                               {copiedOutreachIdx === idx ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
@@ -966,9 +998,32 @@ function DashboardContent() {
         {/* REPORT VIEW 2: SINGLE BRAND VERIFIED AUDIT                    */}
         {/* ------------------------------------------------------------- */}
         {!isCompareReport && summaryData && (
-          <div className="space-y-8 animate-fadeIn pt-4">
+          <div className="space-y-8 animate-fadeIn pt-2">
             
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* EXECUTIVE PDF HEADER (Visible only on Print) */}
+            <div className="hidden print:block border-b-2 border-indigo-500 pb-4 mb-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="text-[10px] font-mono tracking-widest text-indigo-400 uppercase">
+                    CONFIDENTIAL &bull; EXECUTIVE AEO CITATION REPORT
+                  </div>
+                  <h1 className="text-2xl font-black text-white mt-1">
+                    {brandA} Visibility Overview
+                  </h1>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Category: {category} &bull; Target Domain: {domainA}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-black text-indigo-400">PulseFlow AEO</div>
+                  <div className="text-[10px] text-slate-400">{currentDate}</div>
+                  <div className="text-[9px] text-slate-500 font-mono">Job ID: {jobId?.substring(0, 8)}...</div>
+                </div>
+              </div>
+            </div>
+
+            {/* SCREEN REPORT HEADER (Hidden on Print) */}
+            <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => { setSummaryData(null); router.push("/"); }} 
@@ -1004,8 +1059,8 @@ function DashboardContent() {
             </div>
 
             {/* 4 CORE KPI CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
+            <div className="print-avoid-break grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="kpi-card bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
                 <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-wide">
                   <TrendingUp className="h-4 w-4" /> SHARE OF VOICE
                 </div>
@@ -1015,7 +1070,7 @@ function DashboardContent() {
                 <p className="text-xs text-slate-400">Across {summaryData.total_prompts_evaluated || 30} evaluated queries</p>
               </div>
 
-              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
+              <div className="kpi-card bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wide">
                   <BarChart3 className="h-4 w-4 text-indigo-400" /> AVG POSITION
                 </div>
@@ -1025,7 +1080,7 @@ function DashboardContent() {
                 <p className="text-xs text-slate-400">When recommended by AI</p>
               </div>
 
-              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
+              <div className="kpi-card bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wide">
                   <FileText className="h-4 w-4" /> TOTAL QUERIES
                 </div>
@@ -1033,7 +1088,7 @@ function DashboardContent() {
                 <p className="text-xs text-slate-400">Prompts in category taxonomy</p>
               </div>
 
-              <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
+              <div className="kpi-card bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
                 <div className="flex items-center gap-2 text-xs font-bold text-sky-400 uppercase tracking-wide">
                   <Globe className="h-4 w-4" /> PRIMARY SOURCES
                 </div>
@@ -1042,8 +1097,8 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* TABS */}
-            <div className="border-b border-slate-800 flex gap-8">
+            {/* TABS (Hidden on Print) */}
+            <div className="no-print border-b border-slate-800 flex gap-8">
               <button
                 onClick={() => setActiveReportTab("overview")}
                 className={`pb-4 text-sm font-bold flex items-center gap-2 transition ${
@@ -1066,7 +1121,7 @@ function DashboardContent() {
             {activeReportTab === "overview" && (
               <div className="space-y-8 animate-fadeIn">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                  <div className="print-avoid-break bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                     <h3 className="text-md font-bold text-white flex items-center gap-2">
                       <AlertCircle className="h-5 w-5 text-amber-400" /> Competitor Mentions Breakdown
                     </h3>
@@ -1080,7 +1135,7 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                  <div className="print-avoid-break bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                     <h3 className="text-md font-bold text-white flex items-center gap-2">
                       <Globe className="h-5 w-5 text-sky-400" /> Top Cited Sources Powering AI
                     </h3>
@@ -1094,7 +1149,7 @@ function DashboardContent() {
                           className="flex justify-between items-center bg-slate-950 p-3.5 rounded-xl border border-slate-800 hover:border-slate-700 transition group"
                         >
                           <span className="text-xs font-mono text-indigo-300 truncate pr-4">{srcUrl}</span>
-                          <ExternalLink className="h-4 w-4 text-slate-500 group-hover:text-indigo-400 shrink-0" />
+                          <ExternalLink className="no-print h-4 w-4 text-slate-500 group-hover:text-indigo-400 shrink-0" />
                         </a>
                       ))}
                     </div>
@@ -1146,7 +1201,7 @@ function DashboardContent() {
             {/* TAB 2: REMEDIATION */}
             {activeReportTab === "remediation" && (
               <div className="space-y-8 animate-fadeIn">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
                       <Code2 className="h-5 w-5 text-indigo-400" /> Automated JSON-LD Schema
@@ -1157,7 +1212,7 @@ function DashboardContent() {
                         setCopiedSchema(true);
                         setTimeout(() => setCopiedSchema(false), 2000);
                       }}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition"
+                      className="no-print px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition"
                     >
                       {copiedSchema ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                       {copiedSchema ? "Copied!" : "Copy Code"}
@@ -1171,7 +1226,7 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
+                <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl">
                   <div className="flex items-center gap-2">
                     <Mail className="h-5 w-5 text-indigo-400" />
                     <h3 className="text-lg font-bold text-white">Listicle Outreach Campaigns</h3>
@@ -1189,7 +1244,7 @@ function DashboardContent() {
                                 setCopiedOutreachIdx(idx);
                                 setTimeout(() => setCopiedOutreachIdx(null), 2000);
                               }}
-                              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
+                              className="no-print p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0"
                             >
                               {copiedOutreachIdx === idx ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
@@ -1206,7 +1261,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* MARKETING SECTIONS (Only shown if unauthenticated and not viewing report) */}
+        {/* MARKETING SECTIONS (Unauthenticated only) */}
         {!summaryData && !user && (
           <>
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6 py-6">
@@ -1444,7 +1499,7 @@ function DashboardContent() {
       </main>
 
       {/* FOOTER */}
-      <footer className="border-t border-slate-800/80 mt-20 py-12 text-slate-500 text-xs">
+      <footer className="no-print border-t border-slate-800/80 mt-20 py-12 text-slate-500 text-xs">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 text-white font-bold">
             <BarChart3 className="h-4 w-4 text-indigo-400" /> PulseFlow AEO
