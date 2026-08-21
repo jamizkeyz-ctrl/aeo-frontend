@@ -82,34 +82,26 @@ export default function PricingModal({
             { display_name: "User ID", variable_name: "user_id", value: userId || "" },
           ],
         },
-        callback: function (response: any) {
+        callback: async function (response: any) {
           if (userId) {
-            const supabase = createClient();
-            supabase
-              .from("profiles")
-              .update({
-                tier: plan,
-                audits_limit: plan === "agency" ? 99999 : 50,
-                audits_used: 0,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", userId)
-              .then(() => {
-                setLoadingPlan(null);
-                onSuccess();
-                onClose();
-              })
-              .catch((err) => {
-                console.error("Profile sync error:", err);
-                setLoadingPlan(null);
-                onSuccess();
-                onClose();
-              });
-          } else {
-            setLoadingPlan(null);
-            onSuccess();
-            onClose();
+            try {
+              const supabase = createClient();
+              await supabase
+                .from("profiles")
+                .update({
+                  tier: plan,
+                  audits_limit: plan === "agency" ? 99999 : 50,
+                  audits_used: 0,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", userId);
+            } catch (err: any) {
+              console.error("Profile sync error:", err);
+            }
           }
+          setLoadingPlan(null);
+          onSuccess();
+          onClose();
         },
         onClose: function () {
           setLoadingPlan(null);
@@ -239,7 +231,7 @@ export default function PricingModal({
             </div>
 
             <button
-              onClick={() => handlePaystackPayment("pro", 7500000)} // ₦75,000 in kobo
+              onClick={() => handlePaystackPayment("pro", 7500000)} // ₦75,000 in kobo (~$49)
               disabled={loadingPlan !== null}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50"
             >
@@ -282,7 +274,7 @@ export default function PricingModal({
             </div>
 
             <button
-              onClick={() => handlePaystackPayment("agency", 22500000)} // ₦225,000 in kobo
+              onClick={() => handlePaystackPayment("agency", 22500000)} // ₦225,000 in kobo (~$149)
               disabled={loadingPlan !== null}
               className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
