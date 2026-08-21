@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s | PulseFlow AEO",
   },
   description:
-    "Measure and conquer your brand visibility across AI Answer Engines. Real-time 30-prompt citation audits for ChatGPT Search, Perplexity, Claude, and Google AI Overviews.",
+    "Measure and conquer your brand visibility across AI Answer Engines with real-time 30-prompt citation audits and schema fixes.",
   keywords: [
     "AEO",
     "Answer Engine Optimization",
@@ -19,52 +19,30 @@ export const metadata: Metadata = {
     "ChatGPT SEO",
     "Perplexity AI Citations",
     "AI Search Engine Optimization",
-    "Generative Engine Optimization",
     "GEO",
   ],
   authors: [{ name: "PulseFlow AEO Team" }],
   creator: "PulseFlow AEO",
   publisher: "PulseFlow AEO",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://pulseflowaeo.com",
     siteName: "PulseFlow AEO",
-    title: "PulseFlow AEO | Answer Engine Visibility & Citation Engine",
+    title: "PulseFlow AEO | Answer Engine Visibility Engine",
     description:
-      "Benchmark your brand's Share of Voice against competitors across AI search platforms. Instant schema remediation and conquest listicle generation.",
-    images: [
-      {
-        url: "/og-preview.png",
-        width: 1200,
-        height: 630,
-        alt: "PulseFlow AEO - AI Search Share of Voice Benchmark",
-      },
-    ],
+      "Benchmark Share of Voice across ChatGPT, Perplexity & Claude with automated schema remediation.",
   },
   twitter: {
     card: "summary_large_image",
     title: "PulseFlow AEO | AI Answer Engine Visibility Engine",
     description:
-      "Track your brand's AI search presence across ChatGPT, Perplexity, and Google AI Overviews in seconds.",
-    images: ["/og-preview.png"],
+      "Benchmark Share of Voice across ChatGPT, Perplexity & Claude with automated schema remediation.",
     creator: "@pulseflowaeo",
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
   },
 };
 
