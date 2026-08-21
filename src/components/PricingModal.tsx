@@ -60,7 +60,7 @@ export default function PricingModal({
 
     if (!paystackKey) {
       setLoadingPlan(null);
-      setPayError("Paystack Public Key is not configured on the client. Please verify Vercel environment variables.");
+      setPayError("Paystack Public Key is not configured. Please check your environment variables.");
       return;
     }
 
@@ -69,6 +69,29 @@ export default function PricingModal({
       if (!scriptLoaded) {
         throw new Error("Unable to load Paystack payment gateway. Please check your network connection.");
       }
+
+      // Standalone sync function to avoid passing async callbacks into Paystack setup
+      const finalizeUpgrade = async () => {
+        if (userId) {
+          try {
+            const supabase = createClient();
+            await supabase
+              .from("profiles")
+              .update({
+                tier: plan,
+                audits_limit: plan === "agency" ? 99999 : 50,
+                audits_used: 0,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", userId);
+          } catch (err: any) {
+            console.error("Profile sync error:", err);
+          }
+        }
+        setLoadingPlan(null);
+        onSuccess();
+        onClose();
+      };
 
       // @ts-ignore
       const handler = window.PaystackPop.setup({
@@ -82,26 +105,8 @@ export default function PricingModal({
             { display_name: "User ID", variable_name: "user_id", value: userId || "" },
           ],
         },
-        callback: async function (response: any) {
-          if (userId) {
-            try {
-              const supabase = createClient();
-              await supabase
-                .from("profiles")
-                .update({
-                  tier: plan,
-                  audits_limit: plan === "agency" ? 99999 : 50,
-                  audits_used: 0,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq("id", userId);
-            } catch (err: any) {
-              console.error("Profile sync error:", err);
-            }
-          }
-          setLoadingPlan(null);
-          onSuccess();
-          onClose();
+        callback: function (_response: any) {
+          finalizeUpgrade();
         },
         onClose: function () {
           setLoadingPlan(null);
