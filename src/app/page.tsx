@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   BarChart3, 
@@ -25,17 +25,13 @@ import {
   Minus,
   Sparkles,
   Zap,
-  ShieldCheck,
-  Layers,
   ChevronRight,
   ChevronDown,
   ArrowRight,
-  Database,
-  SearchCheck,
-  Cpu,
-  Workflow,
-  Compass,
-  CheckCircle2
+  CheckCircle2,
+  History,
+  Clock,
+  ExternalLink as OpenIcon
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
@@ -59,6 +55,10 @@ function DashboardContent() {
   const [user, setUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
+  // History State
+  const [auditHistory, setAuditHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   // Input Form States
   const [brandA, setBrandA] = useState("BudgetFlow");
   const [domainA, setDomainA] = useState("budgetflow-finance.netlify.app");
@@ -77,18 +77,53 @@ function DashboardContent() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
 
+  // 1. Fetch Audit History
+  const fetchAuditHistory = useCallback(async (userId?: string) => {
+    try {
+      setLoadingHistory(true);
+      let query = supabase
+        .from("audit_jobs")
+        .select("id, created_at, target_brand, target_domain, audit_type, category, share_of_voice, status, summary_payload")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (userId) {
+        query = query.or(`created_by.eq.${userId},created_by.is.null`);
+      }
+
+      const { data, error } = await query;
+      if (!error && data) {
+        setAuditHistory(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [supabase]);
+
+  // 2. Auth Session Listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const activeUser = session?.user ?? null;
+      setUser(activeUser);
+      if (activeUser) {
+        fetchAuditHistory(activeUser.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const activeUser = session?.user ?? null;
+      setUser(activeUser);
+      if (activeUser) {
+        fetchAuditHistory(activeUser.id);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchAuditHistory, supabase]);
 
+  // 3. Query Loader (?report=...)
   useEffect(() => {
     const reportParam = searchParams.get("report");
     if (reportParam && reportParam !== jobId) {
@@ -97,6 +132,7 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
+  // 4. Polling & Report Data Ingestion
   useEffect(() => {
     if (!jobId || status !== "processing") return;
 
@@ -124,6 +160,7 @@ function DashboardContent() {
 
           if (s.category) setCategory(s.category);
           setStatus("completed");
+          if (user) fetchAuditHistory(user.id);
           clearInterval(interval);
         } else if (data.status === "failed") {
           setError(data.error || "Batch execution failed.");
@@ -136,7 +173,7 @@ function DashboardContent() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [jobId, status]);
+  }, [jobId, status, user, fetchAuditHistory]);
 
   const handleStartAudit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,8 +189,20 @@ function DashboardContent() {
       : "/api/v1/aeo/batch-audit";
 
     const payload = mode === "compare"
-      ? { brand_a_name: brandA, brand_a_domain: cleanDomainA, brand_b_name: brandB, brand_b_domain: cleanDomainB, category }
-      : { target_brand: brandA, target_domain: cleanDomainA, category };
+      ? { 
+          brand_a_name: brandA, 
+          brand_a_domain: cleanDomainA, 
+          brand_b_name: brandB, 
+          brand_b_domain: cleanDomainB, 
+          category,
+          user_id: user?.id || null 
+        }
+      : { 
+          target_brand: brandA, 
+          target_domain: cleanDomainA, 
+          category,
+          user_id: user?.id || null 
+        };
 
     try {
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -174,6 +223,7 @@ function DashboardContent() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setAuditHistory([]);
   };
 
   const handleShareLink = () => {
@@ -185,6 +235,12 @@ function DashboardContent() {
 
   const scrollToEngine = () => {
     document.getElementById("engine")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const loadPastReport = (pastJobId: string) => {
+    setJobId(pastJobId);
+    setStatus("processing");
+    router.push(`?report=${pastJobId}`);
   };
 
   const defaultCompetitors = [
@@ -285,6 +341,7 @@ function DashboardContent() {
 
           <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-slate-400">
             <a href="#engine" className="hover:text-white transition">Live Engine</a>
+            {user && <a href="#history" className="hover:text-white transition">Audit History</a>}
             <a href="#solutions" className="hover:text-white transition">Platform</a>
             <a href="#architecture" className="hover:text-white transition">Architecture</a>
             <a href="#faq" className="hover:text-white transition">FAQ</a>
@@ -295,7 +352,7 @@ function DashboardContent() {
               <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 px-4 py-2 rounded-xl shadow-inner">
                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs text-slate-300 font-mono">{user.email?.split("@")[0]}</span>
-                <button onClick={handleSignOut} className="text-slate-400 hover:text-red-400 transition" title="Sign Out">
+                <button onClick={handleSignOut} className="text-slate-400 hover:text-red-400 transition ml-1" title="Sign Out">
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>
@@ -348,12 +405,14 @@ function DashboardContent() {
               >
                 Run Free Visibility Audit <ChevronRight className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="w-full sm:w-auto px-8 py-4 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
-              >
-                Create Workspace
-              </button>
+              {!user && (
+                <button
+                  onClick={() => setIsAuthOpen(true)}
+                  className="w-full sm:w-auto px-8 py-4 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
+                >
+                  Create Workspace
+                </button>
+              )}
             </div>
 
             {/* ENGINE BADGES */}
@@ -367,7 +426,7 @@ function DashboardContent() {
           </section>
         )}
 
-        {/* LIVE INTERACTIVE AUDIT SANDBOX */}
+        {/* LIVE EVALUATION SANDBOX */}
         <section id="engine" className="scroll-mt-28 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
@@ -498,6 +557,101 @@ function DashboardContent() {
             </div>
           )}
         </section>
+
+        {/* ------------------------------------------------------------- */}
+        {/* WORKSPACE AUDIT HISTORY TABLE (Shown if logged in)            */}
+        {/* ------------------------------------------------------------- */}
+        {!summaryData && user && (
+          <section id="history" className="scroll-mt-28 space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+              <div className="flex items-center gap-2.5">
+                <History className="h-5 w-5 text-indigo-400" />
+                <h3 className="text-xl font-bold text-white">Recent Workspace Audits</h3>
+              </div>
+              <button 
+                onClick={() => fetchAuditHistory(user.id)}
+                className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition"
+              >
+                {loadingHistory ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Refresh"}
+              </button>
+            </div>
+
+            {loadingHistory ? (
+              <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-8 flex items-center justify-center gap-3 text-slate-400 text-sm">
+                <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+                Loading saved audits...
+              </div>
+            ) : auditHistory.length === 0 ? (
+              <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-8 text-center space-y-2">
+                <Clock className="h-8 w-8 text-slate-600 mx-auto" />
+                <p className="text-sm font-semibold text-slate-300">No previous audits found</p>
+                <p className="text-xs text-slate-500">Run an evaluation above to store your first verified report.</p>
+              </div>
+            ) : (
+              <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400 uppercase text-xs">
+                        <th className="py-3.5 px-5">DATE</th>
+                        <th className="py-3.5 px-5">TYPE</th>
+                        <th className="py-3.5 px-5">TARGET BRAND</th>
+                        <th className="py-3.5 px-5">CATEGORY</th>
+                        <th className="py-3.5 px-5">SHARE OF VOICE</th>
+                        <th className="py-3.5 px-5 text-right">ACTION</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/70">
+                      {auditHistory.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-800/40 transition">
+                          <td className="py-4 px-5 text-xs text-slate-400 whitespace-nowrap">
+                            {new Date(item.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
+                          </td>
+                          <td className="py-4 px-5">
+                            {item.audit_type === "compare" ? (
+                              <span className="px-2.5 py-1 bg-purple-950 text-purple-300 border border-purple-800 text-[11px] font-bold rounded-lg flex items-center gap-1 w-fit">
+                                <Swords className="h-3 w-3" /> Compare
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 text-[11px] font-bold rounded-lg w-fit">
+                                Single
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 px-5 font-bold text-white">
+                            {item.target_brand || "N/A"}
+                            <span className="block text-xs font-normal text-slate-400 font-mono">
+                              {item.target_domain}
+                            </span>
+                          </td>
+                          <td className="py-4 px-5 text-xs text-slate-300">{item.category || "General"}</td>
+                          <td className="py-4 px-5">
+                            <span className="text-sm font-black text-indigo-400">
+                              {item.share_of_voice ?? item.summary_payload?.share_of_voice_percentage ?? 0}%
+                            </span>
+                          </td>
+                          <td className="py-4 px-5 text-right">
+                            <button
+                              onClick={() => loadPastReport(item.id)}
+                              className="px-3.5 py-1.5 bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-200 text-xs font-bold rounded-lg transition inline-flex items-center gap-1.5 shadow-sm"
+                            >
+                              Open <OpenIcon className="h-3 w-3" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ------------------------------------------------------------- */}
         {/* REPORT VIEW 1: SIDE-BY-SIDE HEAD-TO-HEAD BENCHMARK            */}
@@ -975,9 +1129,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* ------------------------------------------------------------- */}
-        {/* MARKETING SECTIONS: Shown only when landing page is viewed   */}
-        {/* ------------------------------------------------------------- */}
+        {/* MARKETING SECTIONS */}
         {!summaryData && (
           <>
             {/* STATS STRIP */}
@@ -1219,12 +1371,14 @@ function DashboardContent() {
                 >
                   Start Free Audit <ArrowRight className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={() => setIsAuthOpen(true)}
-                  className="px-8 py-3.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
-                >
-                  Create Account
-                </button>
+                {!user && (
+                  <button
+                    onClick={() => setIsAuthOpen(true)}
+                    className="px-8 py-3.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 font-semibold text-sm rounded-xl transition"
+                  >
+                    Create Account
+                  </button>
+                )}
               </div>
             </section>
           </>
