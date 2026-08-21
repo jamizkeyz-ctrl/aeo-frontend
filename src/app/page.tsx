@@ -6,37 +6,34 @@ import Script from "next/script";
 import { 
   BarChart3, 
   Search, 
-  ArrowLeft,
+  ArrowLeft, 
   Share2, 
   Printer, 
   Copy, 
   Check, 
   ExternalLink, 
-  Loader2,
-  Swords,
-  AlertCircle,
-  Code2,
-  Mail,
-  Globe,
-  TrendingUp,
-  FileText,
-  User,
-  LogOut,
-  Trophy,
-  Minus,
-  Sparkles,
-  Zap,
-  ChevronRight,
-  ChevronDown,
-  ArrowRight,
-  CheckCircle2,
-  History,
-  Clock,
-  ExternalLink as OpenIcon,
-  Crown,
-  ShieldCheck,
-  Calendar,
-  Building2
+  Loader2, 
+  Swords, 
+  AlertCircle, 
+  Code2, 
+  Mail, 
+  Globe, 
+  TrendingUp, 
+  FileText, 
+  LogOut, 
+  Trophy, 
+  Minus, 
+  Sparkles, 
+  Zap, 
+  ChevronRight, 
+  ChevronDown, 
+  ArrowRight, 
+  CheckCircle2, 
+  History, 
+  Clock, 
+  ExternalLink as OpenIcon, 
+  Crown, 
+  Flame 
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
@@ -67,12 +64,12 @@ function DashboardContent() {
   const [auditHistory, setAuditHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Input Form States
-  const [brandA, setBrandA] = useState("BudgetFlow");
-  const [domainA, setDomainA] = useState("budgetflow-finance.netlify.app");
-  const [brandB, setBrandB] = useState("YNAB");
-  const [domainB, setDomainB] = useState("ynab.com");
-  const [category, setCategory] = useState("Personal Finance App");
+  // Input Form States (Smart Production Defaults)
+  const [brandA, setBrandA] = useState("");
+  const [domainA, setDomainA] = useState("");
+  const [brandB, setBrandB] = useState("");
+  const [domainB, setDomainB] = useState("");
+  const [category, setCategory] = useState("");
 
   // Job & Execution States
   const [jobId, setJobId] = useState<string | null>(null);
@@ -86,7 +83,6 @@ function DashboardContent() {
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
   const [copiedUrlIdx, setCopiedUrlIdx] = useState<number | null>(null);
 
-  // Formatted date for PDF report
   const currentDate = new Date().toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -282,43 +278,53 @@ function DashboardContent() {
     router.push(`?report=${pastJobId}`);
   };
 
-  const defaultCompetitors = [
-    { name: "PocketGuard", count: "7 prompts" },
-    { name: "Monarch Money", count: "6 prompts" },
-    { name: "QuickBooks", count: "6 prompts" },
-    { name: "YNAB", count: "5 prompts" },
-    { name: "Xero", count: "4 prompts" },
-    { name: "Origin", count: "3 prompts" }
+  // Dynamic Extractors: Real sources from audit job or high-intent fallbacks
+  const realCitedSources = (summaryData?.cited_sources || summaryData?.top_sources || [
+    "https://techcrunch.com",
+    "https://www.producthunt.com",
+    "https://g2.com",
+    "https://capterra.com"
+  ]);
+
+  const realCompetitors = summaryData?.competitor_mentions || [
+    { name: brandB || "Market Leader A", count: "Top Cited" },
+    { name: "Alternative Category Solution", count: "High Frequency" },
+    { name: "Legacy Platform", count: "Moderate Citations" }
   ];
 
-  const defaultCitedSources = [
-    "https://www.forbes.com/financial-services/best-budgeting-apps-2",
-    "https://www.pcmag.com/picks/the-best-personal-finance-services",
-    "https://www.purdueglobal.edu/blog/student-life/budgeting-apps-personal-fina...",
-    "https://www.nerdwallet.com/finance/learn/best-budget-apps",
-    "https://getpennies.com/ultimate-multi-currency-budget-tracker"
-  ];
+  const getDomainName = (urlStr: string) => {
+    try {
+      return new URL(urlStr).hostname.replace(/^www\./, "");
+    } catch {
+      return "Editorial Team";
+    }
+  };
 
+  // Dynamic Context-Aware Outreach Emails
   const outreachCampaigns = [
     {
-      url: `https://qubit.capital/blog/best-${category.toLowerCase().replace(/\s+/g, '-')}`,
-      title: `Enhance Your ${category} Comparison with ${brandA}`,
-      body: `Hi there,\n\nI hope this message finds you well! I recently came across your article reviewing top tools for ${category}.\n\nWhile ${brandB} is a well-known option, I wanted to suggest adding ${brandA} as an emerging, highly efficient modern alternative.`
+      url: realCitedSources[0],
+      publisher: getDomainName(realCitedSources[0]),
+      title: `Enhance Your ${category || "Industry"} Guide with ${brandA || "Our Solution"}`,
+      body: `Hi ${getDomainName(realCitedSources[0])} Editorial Team,\n\nI noticed your authority guide ranking solutions in the ${category || "target"} space.\n\nWhile ${brandB || "legacy platforms"} remain widely cited, ${brandA || "our product"} (${domainA || "domain.com"}) has introduced architectural improvements that are resonating with users.\n\nWould your editorial team be interested in a brief product breakdown for your next roundup refresh?`
     },
     {
-      url: `https://www.qapita.com/blog/${category.toLowerCase().replace(/\s+/g, '-')}-tools`,
-      title: `Boost Your Alternatives Guide with ${brandA}`,
-      body: `Hi [Recipient's Name],\n\nI just read your in-depth guide on ${category} solutions. Great breakdown!\n\nGiven the rising demand for lightweight and transparent alternatives to legacy players like ${brandB}, I recommend listing ${brandA}.`
+      url: realCitedSources[1] || realCitedSources[0],
+      publisher: getDomainName(realCitedSources[1] || realCitedSources[0]),
+      title: `Resource Addition for Your ${category || "Software"} Comparison`,
+      body: `Hi there,\n\nI regularly reference your tech roundups. Given that conversational AI models frequently cite your article as the primary answer source for ${category || "buyer"} searches, listing modern contenders gives your readers immediate value.\n\nWe would be thrilled to provide sandbox access to test ${brandA || "our platform"}.`
     },
     {
-      url: `https://storyflow.so/blog/best-${category.toLowerCase().replace(/\s+/g, '-')}-2026`,
-      title: `${brandA}: A Must-Have in Your 2026 ${category} Roundups!`,
-      body: `Hi [Recipient's Name],\n\nI came across your 2026 roundup for ${category} tools.\n\n${brandA} has quickly become a standout alternative with its sleek UI and powerful feature set.`
+      url: realCitedSources[2] || realCitedSources[0],
+      publisher: getDomainName(realCitedSources[2] || realCitedSources[0]),
+      title: `${brandA || "Our Brand"}: Inclusion for Your 2026 ${category || "Category"} Review`,
+      body: `Hi Editorial Team,\n\nI came across your published roundup on ${category || "top tools"}.\n\nAs answer engines continue prioritizing entity-verified products, we've structured full technical documentation and verified client benchmark metrics for ${brandA || "our tool"}.\n\nLet me know if we can share a quick overview!`
     },
     {
-      url: `https://www.rock.so/blog/${brandB.toLowerCase()}-alternatives`,
-      title: `Feature ${brandA} in Your "${brandB} Alternatives" Article`,
-      body: `Hi [Recipient's Name],\n\nI noticed your popular piece highlighting top alternatives to ${brandB}.\n\n${brandA} is engineered specifically to address common user pain points with modern automation.`
+      url: realCitedSources[3] || realCitedSources[0],
+      publisher: getDomainName(realCitedSources[3] || realCitedSources[0]),
+      title: `Alternative Recommendations Feature for ${brandB || "Competitors"}`,
+      body: `Hi Editor,\n\nI noticed your popular comparison piece covering ${brandB || "major alternatives"}.\n\n${brandA || "Our team"} provides a transparent, modern alternative engineered to eliminate common legacy workflows.\n\nHappy to provide quotes or product specifications if you're updating the article!`
     }
   ];
 
@@ -327,15 +333,29 @@ function DashboardContent() {
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": brandA,
-        "operatingSystem": "Web, iOS, Android, Windows, macOS",
-        "applicationCategory": category,
-        "url": `https://${domainA.replace(/^https?:\/\//, "")}`,
-        "description": `${brandA} is a modern, privacy-focused ${category} providing intuitive expense tracking, cash flow analytics, and budgeting tools.`
+        "name": brandA || "Your Brand",
+        "operatingSystem": "Web, iOS, Android, macOS, Windows",
+        "applicationCategory": category || "BusinessApplication",
+        "url": domainA ? `https://${domainA.replace(/^https?:\/\//, "")}` : "https://yourdomain.com",
+        "description": `${brandA || "Our Platform"} is a next-generation ${category || "technology solution"} engineered for maximum performance, security, and visibility across generative AI models.`
       },
       null,
       2
     )}\n</script>`;
+  };
+
+  // Generate dynamic, context-specific remediation recommendations
+  const getActionRecommendation = (item: any, idx: number) => {
+    if (item.brand_mentioned || item.mentioned) {
+      return `Maintain citation frequency. Reinforce primary anchor terms and update target entity schema attributes.`;
+    }
+    const strategies = [
+      `Publish a dedicated comparison guide addressing this query taxonomy directly on your root domain.`,
+      `Pitch listicle inclusion to top publishers currently cited in AI responses for this prompt.`,
+      `Implement structured JSON-LD SoftwareApplication schema to improve entity recognition for this intent.`,
+      `Create an FAQ or knowledge-base article matching the exact conversational phrasing of this search.`
+    ];
+    return strategies[idx % strategies.length];
   };
 
   const isCompareReport = summaryData && (summaryData.brand_a_summary || summaryData.head_to_head_prompts);
@@ -343,7 +363,7 @@ function DashboardContent() {
   const faqs = [
     {
       q: "What is Answer Engine Optimization (AEO)?",
-      a: "AEO focuses on optimizing brand visibility and citation share across AI conversational models (ChatGPT, Perplexity, Claude, Google AI Overviews) rather than traditional blue-link search engine rankings."
+      a: "AEO focuses on optimizing brand visibility and citation share across AI conversational models (ChatGPT Search, Perplexity, Claude, Google AI Overviews) rather than traditional ten-blue-link search rankings."
     },
     {
       q: "How is Share of Voice (SoV) calculated?",
@@ -367,7 +387,7 @@ function DashboardContent() {
       {/* GLOW BACKGROUNDS */}
       <div className="no-print absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[550px] bg-gradient-to-b from-indigo-600/20 via-purple-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
 
-      {/* FROSTED NAVBAR (Hidden on print) */}
+      {/* FROSTED NAVBAR */}
       <header className="no-print fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-xl bg-[#030712]/85 border-b border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setSummaryData(null); router.push("/"); }}>
@@ -434,7 +454,7 @@ function DashboardContent() {
       {/* MAIN CONTAINER */}
       <main className="max-w-7xl mx-auto px-6 pt-28 pb-12 space-y-16">
         
-        {/* VIEW A: UNLOGGED MARKETING HERO */}
+        {/* UNAUTHENTICATED MARKETING HERO */}
         {!summaryData && !user && (
           <section className="text-center max-w-4xl mx-auto space-y-8 pt-6">
             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-indigo-950/70 border border-indigo-600/40 text-indigo-300 text-xs font-semibold shadow-inner">
@@ -478,7 +498,7 @@ function DashboardContent() {
           </section>
         )}
 
-        {/* VIEW B: AUTHENTICATED WORKSPACE GREETING */}
+        {/* AUTHENTICATED WORKSPACE GREETING */}
         {!summaryData && user && (
           <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-6 gap-4">
             <div>
@@ -505,7 +525,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* LIVE EVALUATION SANDBOX (Hidden on Print) */}
+        {/* LIVE EVALUATION SANDBOX */}
         {!summaryData && (
           <section id="engine" className="no-print scroll-mt-28 bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
             
@@ -559,7 +579,7 @@ function DashboardContent() {
                     value={brandA}
                     onChange={(e) => setBrandA(e.target.value)}
                     required
-                    placeholder="e.g. BudgetFlow"
+                    placeholder="e.g. BudgetFlow, Stripe, Notion"
                     className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
                   />
                 </div>
@@ -573,7 +593,7 @@ function DashboardContent() {
                     value={domainA}
                     onChange={(e) => setDomainA(e.target.value)}
                     required
-                    placeholder="e.g. budgetflow.app"
+                    placeholder="e.g. yourdomain.com"
                     className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
                   />
                 </div>
@@ -587,7 +607,7 @@ function DashboardContent() {
                         value={brandB}
                         onChange={(e) => setBrandB(e.target.value)}
                         required
-                        placeholder="e.g. YNAB"
+                        placeholder="e.g. Competitor Brand"
                         className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition shadow-inner"
                       />
                     </div>
@@ -598,7 +618,7 @@ function DashboardContent() {
                         value={domainB}
                         onChange={(e) => setDomainB(e.target.value)}
                         required
-                        placeholder="e.g. ynab.com"
+                        placeholder="e.g. competitor.com"
                         className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition shadow-inner"
                       />
                     </div>
@@ -612,7 +632,7 @@ function DashboardContent() {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     required
-                    placeholder="e.g. Personal Finance App"
+                    placeholder="e.g. Personal Finance, CRM, E-commerce"
                     className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition shadow-inner"
                   />
                 </div>
@@ -631,7 +651,7 @@ function DashboardContent() {
                 ) : (
                   <>
                     <Search className="h-4 w-4" />
-                    {mode === "compare" ? `Run Head-to-Head: ${brandA} vs ${brandB}` : `Run 30-Prompt Audit for ${brandA}`}
+                    {mode === "compare" ? `Run Head-to-Head: ${brandA || "Brand A"} vs ${brandB || "Brand B"}` : `Run 30-Prompt Audit for ${brandA || "Target Brand"}`}
                   </>
                 )}
               </button>
@@ -646,7 +666,7 @@ function DashboardContent() {
           </section>
         )}
 
-        {/* WORKSPACE AUDIT HISTORY TABLE (Hidden on Print) */}
+        {/* WORKSPACE AUDIT HISTORY TABLE */}
         {!summaryData && user && (
           <section id="history" className="no-print space-y-6">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
@@ -745,7 +765,7 @@ function DashboardContent() {
         {isCompareReport && (
           <div className="space-y-8 animate-fadeIn pt-2">
             
-            {/* EXECUTIVE PDF HEADER (Visible only on Print) */}
+            {/* EXECUTIVE PDF HEADER */}
             <div className="hidden print:block border-b-2 border-indigo-500 pb-4 mb-6">
               <div className="flex justify-between items-start">
                 <div>
@@ -767,7 +787,7 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* SCREEN REPORT HEADER (Hidden on Print) */}
+            {/* SCREEN REPORT HEADER */}
             <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -851,7 +871,7 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* TAB SELECTOR (Hidden on print) */}
+            {/* TAB SELECTOR */}
             <div className="no-print border-b border-slate-800 flex gap-8">
               <button
                 onClick={() => setActiveReportTab("overview")}
@@ -872,7 +892,7 @@ function DashboardContent() {
             </div>
 
             {/* TAB 1: COMPARISON BREAKDOWN */}
-            {activeReportTab === "overview" && (
+            {(activeReportTab === "overview" || typeof window !== "undefined") && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Swords className="h-5 w-5 text-indigo-400" /> Prompt-by-Prompt Breakdown
@@ -938,7 +958,7 @@ function DashboardContent() {
                 <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      <Code2 className="h-5 w-5 text-indigo-400" /> Automated JSON-LD Schema ({brandA})
+                      <Code2 className="h-5 w-5 text-indigo-400" /> Automated JSON-LD Schema ({brandA || "Target Brand"})
                     </h3>
                     <button
                       onClick={() => {
@@ -953,7 +973,7 @@ function DashboardContent() {
                     </button>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Paste this <code className="text-indigo-400">&lt;script&gt;</code> tag in the <code className="text-indigo-400">&lt;head&gt;</code> section of {brandA}&apos;s website.
+                    Paste this <code className="text-indigo-400">&lt;script&gt;</code> tag in the <code className="text-indigo-400">&lt;head&gt;</code> section of {brandA || "your"}&apos;s website.
                   </p>
                   <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-indigo-300 overflow-x-auto">
                     <pre className="whitespace-pre-wrap">{generateJsonLdSchema()}</pre>
@@ -971,7 +991,6 @@ function DashboardContent() {
                       <div key={idx} className="remediation-box bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
                         <div className="space-y-3">
                           <div className="flex justify-between items-start gap-2">
-                            {/* Clickable URL + Direct Copy Action */}
                             <div className="flex items-center gap-2 max-w-[280px] truncate">
                               <a
                                 href={camp.url}
@@ -996,7 +1015,6 @@ function DashboardContent() {
                               </button>
                             </div>
 
-                            {/* Copy Full Email Pitch Button */}
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(`${camp.title}\n\n${camp.body}`);
@@ -1038,7 +1056,7 @@ function DashboardContent() {
         {!isCompareReport && summaryData && (
           <div className="space-y-8 animate-fadeIn pt-2">
             
-            {/* EXECUTIVE PDF HEADER (Visible only on Print) */}
+            {/* EXECUTIVE PDF HEADER */}
             <div className="hidden print:block border-b-2 border-indigo-500 pb-4 mb-6">
               <div className="flex justify-between items-start">
                 <div>
@@ -1046,7 +1064,7 @@ function DashboardContent() {
                     CONFIDENTIAL &bull; EXECUTIVE AEO CITATION REPORT
                   </div>
                   <h1 className="text-2xl font-black text-white mt-1">
-                    {brandA} Visibility Overview
+                    {brandA || "Target Brand"} Visibility Overview
                   </h1>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Category: {category} &bull; Target Domain: {domainA}
@@ -1060,7 +1078,7 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* SCREEN REPORT HEADER (Hidden on Print) */}
+            {/* SCREEN REPORT HEADER */}
             <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -1074,7 +1092,7 @@ function DashboardContent() {
                     VERIFIED AEO AUDIT REPORT
                   </span>
                   <h2 className="text-2xl font-black text-white">
-                    {brandA} Visibility Overview
+                    {brandA || "Target Brand"} Visibility Overview
                   </h2>
                 </div>
               </div>
@@ -1130,12 +1148,12 @@ function DashboardContent() {
                 <div className="flex items-center gap-2 text-xs font-bold text-sky-400 uppercase tracking-wide">
                   <Globe className="h-4 w-4" /> PRIMARY SOURCES
                 </div>
-                <p className="text-5xl font-black text-white">10</p>
+                <p className="text-5xl font-black text-white">{realCitedSources.length}</p>
                 <p className="text-xs text-slate-400">Top URLs cited by AI</p>
               </div>
             </div>
 
-            {/* TABS (Hidden on Print) */}
+            {/* TABS */}
             <div className="no-print border-b border-slate-800 flex gap-8">
               <button
                 onClick={() => setActiveReportTab("overview")}
@@ -1164,7 +1182,7 @@ function DashboardContent() {
                       <AlertCircle className="h-5 w-5 text-amber-400" /> Competitor Mentions Breakdown
                     </h3>
                     <div className="space-y-3">
-                      {defaultCompetitors.map((comp, idx) => (
+                      {realCompetitors.map((comp: any, idx: number) => (
                         <div key={idx} className="flex justify-between items-center bg-slate-950 p-3.5 rounded-xl border border-slate-800">
                           <span className="text-sm font-semibold text-slate-200">{comp.name}</span>
                           <span className="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-bold rounded-full">{comp.count}</span>
@@ -1178,7 +1196,7 @@ function DashboardContent() {
                       <Globe className="h-5 w-5 text-sky-400" /> Top Cited Sources Powering AI
                     </h3>
                     <div className="space-y-3">
-                      {defaultCitedSources.map((srcUrl, idx) => (
+                      {realCitedSources.map((srcUrl: string, idx: number) => (
                         <a 
                           key={idx} 
                           href={srcUrl} 
@@ -1223,9 +1241,11 @@ function DashboardContent() {
                               )}
                             </td>
                             <td className="py-4 px-4 text-slate-400">{item.rank ? `#${item.rank}` : "-"}</td>
-                            <td className="py-4 px-4 text-slate-300 font-medium">{defaultCompetitors[idx % defaultCompetitors.length].name}</td>
+                            <td className="py-4 px-4 text-slate-300 font-medium">
+                              {item.top_competitor || realCompetitors[idx % realCompetitors.length]?.name || "Competitor"}
+                            </td>
                             <td className="py-4 px-4 text-xs text-slate-400 max-w-md">
-                              Create content that highlights {brandA}&apos;s unique features and benefits compared to competitors.
+                              {getActionRecommendation(item, idx)}
                             </td>
                           </tr>
                         ))}
@@ -1275,7 +1295,6 @@ function DashboardContent() {
                       <div key={idx} className="remediation-box bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 flex flex-col justify-between">
                         <div className="space-y-3">
                           <div className="flex justify-between items-start gap-2">
-                            {/* Clickable URL + Direct Copy Action */}
                             <div className="flex items-center gap-2 max-w-[280px] truncate">
                               <a
                                 href={camp.url}
@@ -1300,7 +1319,6 @@ function DashboardContent() {
                               </button>
                             </div>
 
-                            {/* Copy Full Email Pitch Button */}
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(`${camp.title}\n\n${camp.body}`);
@@ -1336,7 +1354,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* MARKETING SECTIONS (Unauthenticated only) */}
+        {/* MARKETING SECTIONS */}
         {!summaryData && !user && (
           <>
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6 py-6">
