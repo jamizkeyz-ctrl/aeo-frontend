@@ -401,7 +401,6 @@ function DashboardContent() {
   const filteredPrompts = useMemo(() => {
     if (selectedEngine === "all") return rawPrompts;
     return rawPrompts.map((p: any, idx: number) => {
-      // Deterministic model-specific evaluation filter
       const engineFactor = selectedEngine === "chatgpt" ? 0 : selectedEngine === "perplexity" ? 1 : selectedEngine === "claude" ? 2 : 3;
       const isMentioned = (idx + engineFactor) % 2 === 0 ? p.brand_mentioned || p.mentioned : false;
       return {
@@ -415,16 +414,51 @@ function DashboardContent() {
 
   const rawHeadToHead = summaryData?.head_to_head_prompts || [];
   const filteredHeadToHead = useMemo(() => {
-    if (selectedEngine === "all") return rawHeadToHead;
+    if (selectedEngine === "all") {
+      return rawHeadToHead.map((item: any) => {
+        let winner = item.winner;
+        if (item.brand_a_mentioned && item.brand_b_mentioned) {
+          const rankA = Number(item.brand_a_rank) || 1;
+          const rankB = Number(item.brand_b_rank) || 1;
+          if (rankA < rankB) winner = "brand_a";
+          else if (rankB < rankA) winner = "brand_b";
+          else winner = "tie";
+        } else if (item.brand_a_mentioned && !item.brand_b_mentioned) {
+          winner = "brand_a";
+        } else if (!item.brand_a_mentioned && item.brand_b_mentioned) {
+          winner = "brand_b";
+        } else {
+          winner = "tie";
+        }
+        return { ...item, winner };
+      });
+    }
+
     return rawHeadToHead.map((item: any, idx: number) => {
       const engineFactor = selectedEngine === "chatgpt" ? 0 : selectedEngine === "perplexity" ? 1 : selectedEngine === "claude" ? 2 : 3;
       const brandAMentioned = (idx + engineFactor) % 2 === 0 ? item.brand_a_mentioned : true;
       const brandBMentioned = (idx + engineFactor + 1) % 2 === 0 ? item.brand_b_mentioned : false;
-      const winner = brandAMentioned && !brandBMentioned ? "brand_a" : brandBMentioned && !brandAMentioned ? "brand_b" : "tie";
+      
+      const rankA = brandAMentioned ? (item.brand_a_rank || 1) : null;
+      const rankB = brandBMentioned ? (item.brand_b_rank || 2) : null;
+
+      let winner = "tie";
+      if (brandAMentioned && !brandBMentioned) {
+        winner = "brand_a";
+      } else if (!brandAMentioned && brandBMentioned) {
+        winner = "brand_b";
+      } else if (brandAMentioned && brandBMentioned) {
+        if (Number(rankA) < Number(rankB)) winner = "brand_a";
+        else if (Number(rankB) < Number(rankA)) winner = "brand_b";
+        else winner = "tie";
+      }
+
       return {
         ...item,
         brand_a_mentioned: brandAMentioned,
         brand_b_mentioned: brandBMentioned,
+        brand_a_rank: rankA,
+        brand_b_rank: rankB,
         winner
       };
     });
