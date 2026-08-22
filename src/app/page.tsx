@@ -21,7 +21,7 @@ import {
   TrendingUp, 
   FileText, 
   User,
-  UserPlus,
+  UserPlus, 
   LogOut, 
   Trophy, 
   Minus, 
@@ -374,23 +374,23 @@ function DashboardContent() {
     const baseSov = summaryData?.share_of_voice_percentage ?? summaryData?.sov_percentage ?? 0;
     return {
       chatgpt: {
-        sov: baseSov,
-        status: baseSov > 0 ? "Leading Citation" : "No Citations",
+        sov: summaryData?.chatgpt_sov ?? baseSov,
+        status: (summaryData?.chatgpt_sov ?? baseSov) > 0 ? "Active Citations" : "No Citations",
         favDomain: realCitedSources[0] || "producthunt.com"
       },
       perplexity: {
-        sov: baseSov,
-        status: baseSov > 0 ? "High Accuracy" : "No Citations",
+        sov: summaryData?.perplexity_sov ?? baseSov,
+        status: (summaryData?.perplexity_sov ?? baseSov) > 0 ? "High Accuracy" : "No Citations",
         favDomain: realCitedSources[1] || "g2.com"
       },
       claude: {
-        sov: baseSov,
-        status: baseSov > 0 ? "Strong Entity Match" : "No Citations",
+        sov: summaryData?.claude_sov ?? baseSov,
+        status: (summaryData?.claude_sov ?? baseSov) > 0 ? "Strong Entity Match" : "No Citations",
         favDomain: realCitedSources[2] || "techcrunch.com"
       },
       google: {
-        sov: baseSov,
-        status: baseSov > 0 ? "Indexed" : "No Citations",
+        sov: summaryData?.google_sov ?? baseSov,
+        status: (summaryData?.google_sov ?? baseSov) > 0 ? "Indexed" : "No Citations",
         favDomain: realCitedSources[3] || "capterra.com"
       }
     };
@@ -402,7 +402,7 @@ function DashboardContent() {
     if (selectedEngine === "all") return rawPrompts;
     return rawPrompts.filter((p: any) => {
       if (!p.engine) return true;
-      return p.engine.toLowerCase().includes(selectedEngine.toLowerCase());
+      return p.engine.toLowerCase() === selectedEngine.toLowerCase();
     });
   }, [rawPrompts, selectedEngine]);
 
@@ -413,11 +413,11 @@ function DashboardContent() {
       ? rawHeadToHead 
       : rawHeadToHead.filter((item: any) => {
           if (!item.engine) return true;
-          return item.engine.toLowerCase().includes(selectedEngine.toLowerCase());
+          return item.engine.toLowerCase() === selectedEngine.toLowerCase();
         });
 
     return list.map((item: any) => {
-      let winner = item.winner;
+      let winner = "tie";
       if (item.brand_a_mentioned && !item.brand_b_mentioned) {
         winner = "brand_a";
       } else if (!item.brand_a_mentioned && item.brand_b_mentioned) {
