@@ -369,96 +369,71 @@ function DashboardContent() {
     { name: "Legacy Platform", count: "Moderate Citations" }
   ];
 
-  // Engine-Specific Metric Calculation
+  // Ground Truth Engine-Specific Metric Calculation
   const engineBreakdown = useMemo(() => {
     const baseSov = summaryData?.share_of_voice_percentage ?? summaryData?.sov_percentage ?? 0;
     return {
       chatgpt: {
-        sov: Math.min(100, Math.round(baseSov * 1.08)),
-        status: baseSov > 50 ? "Leading Citation" : "Emerging",
+        sov: baseSov,
+        status: baseSov > 0 ? "Leading Citation" : "No Citations",
         favDomain: realCitedSources[0] || "producthunt.com"
       },
       perplexity: {
-        sov: Math.min(100, Math.round(baseSov * 0.95)),
-        status: "High Accuracy",
+        sov: baseSov,
+        status: baseSov > 0 ? "High Accuracy" : "No Citations",
         favDomain: realCitedSources[1] || "g2.com"
       },
       claude: {
-        sov: Math.min(100, Math.round(baseSov * 1.02)),
-        status: "Strong Entity Match",
+        sov: baseSov,
+        status: baseSov > 0 ? "Strong Entity Match" : "No Citations",
         favDomain: realCitedSources[2] || "techcrunch.com"
       },
       google: {
-        sov: Math.min(100, Math.round(baseSov * 0.90)),
-        status: "Index Verification Required",
+        sov: baseSov,
+        status: baseSov > 0 ? "Indexed" : "No Citations",
         favDomain: realCitedSources[3] || "capterra.com"
       }
     };
   }, [summaryData, realCitedSources]);
 
-  // Filter Prompts by Selected Engine
+  // Real Backend Data for Single Brand Prompts
   const rawPrompts = summaryData?.prompt_results || summaryData?.prompts || summaryData?.results || [];
   const filteredPrompts = useMemo(() => {
     if (selectedEngine === "all") return rawPrompts;
-    return rawPrompts.map((p: any, idx: number) => {
-      const engineFactor = selectedEngine === "chatgpt" ? 0 : selectedEngine === "perplexity" ? 1 : selectedEngine === "claude" ? 2 : 3;
-      const isMentioned = (idx + engineFactor) % 2 === 0 ? p.brand_mentioned || p.mentioned : false;
-      return {
-        ...p,
-        brand_mentioned: isMentioned,
-        mentioned: isMentioned,
-        rank: isMentioned ? ((idx % 3) + 1) : null
-      };
+    return rawPrompts.filter((p: any) => {
+      if (!p.engine) return true;
+      return p.engine.toLowerCase().includes(selectedEngine.toLowerCase());
     });
   }, [rawPrompts, selectedEngine]);
 
+  // Real Backend Data for Head-to-Head Comparison Prompts
   const rawHeadToHead = summaryData?.head_to_head_prompts || [];
   const filteredHeadToHead = useMemo(() => {
-    if (selectedEngine === "all") {
-      return rawHeadToHead.map((item: any) => {
-        let winner = item.winner;
-        if (item.brand_a_mentioned && item.brand_b_mentioned) {
-          const rankA = Number(item.brand_a_rank) || 1;
-          const rankB = Number(item.brand_b_rank) || 1;
-          if (rankA < rankB) winner = "brand_a";
-          else if (rankB < rankA) winner = "brand_b";
-          else winner = "tie";
-        } else if (item.brand_a_mentioned && !item.brand_b_mentioned) {
-          winner = "brand_a";
-        } else if (!item.brand_a_mentioned && item.brand_b_mentioned) {
-          winner = "brand_b";
-        } else {
-          winner = "tie";
-        }
-        return { ...item, winner };
-      });
-    }
+    const list = selectedEngine === "all" 
+      ? rawHeadToHead 
+      : rawHeadToHead.filter((item: any) => {
+          if (!item.engine) return true;
+          return item.engine.toLowerCase().includes(selectedEngine.toLowerCase());
+        });
 
-    return rawHeadToHead.map((item: any, idx: number) => {
-      const engineFactor = selectedEngine === "chatgpt" ? 0 : selectedEngine === "perplexity" ? 1 : selectedEngine === "claude" ? 2 : 3;
-      const brandAMentioned = (idx + engineFactor) % 2 === 0 ? item.brand_a_mentioned : true;
-      const brandBMentioned = (idx + engineFactor + 1) % 2 === 0 ? item.brand_b_mentioned : false;
-      
-      const rankA = brandAMentioned ? (item.brand_a_rank || 1) : null;
-      const rankB = brandBMentioned ? (item.brand_b_rank || 2) : null;
-
-      let winner = "tie";
-      if (brandAMentioned && !brandBMentioned) {
+    return list.map((item: any) => {
+      let winner = item.winner;
+      if (item.brand_a_mentioned && !item.brand_b_mentioned) {
         winner = "brand_a";
-      } else if (!brandAMentioned && brandBMentioned) {
+      } else if (!item.brand_a_mentioned && item.brand_b_mentioned) {
         winner = "brand_b";
-      } else if (brandAMentioned && brandBMentioned) {
-        if (Number(rankA) < Number(rankB)) winner = "brand_a";
-        else if (Number(rankB) < Number(rankA)) winner = "brand_b";
+      } else if (item.brand_a_mentioned && item.brand_b_mentioned) {
+        const rankA = Number(item.brand_a_rank) || 99;
+        const rankB = Number(item.brand_b_rank) || 99;
+        if (rankA < rankB) winner = "brand_a";
+        else if (rankB < rankA) winner = "brand_b";
         else winner = "tie";
+      } else {
+        winner = "tie";
       }
 
       return {
         ...item,
-        brand_a_mentioned: brandAMentioned,
-        brand_b_mentioned: brandBMentioned,
-        brand_a_rank: rankA,
-        brand_b_rank: rankB,
         winner
       };
     });
