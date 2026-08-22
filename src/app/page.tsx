@@ -63,9 +63,11 @@ function DashboardContent() {
   const [authInitialMode, setAuthInitialMode] = useState<"signin" | "signup">("signin");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
 
-  // History State
+  // History & Monitoring States
   const [auditHistory, setAuditHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [monitoredBrandIds, setMonitoredBrandIds] = useState<Set<string>>(new Set());
+  const [monitoringLoading, setMonitoringLoading] = useState<string | null>(null);
 
   // Input Form States (Smart Production Defaults)
   const [brandA, setBrandA] = useState("");
@@ -126,12 +128,71 @@ function DashboardContent() {
       if (!error && data) {
         setAuditHistory(data);
       }
+
+      // Fetch active monitored brands for this user
+      const { data: monitors } = await supabase
+        .from("monitored_brands")
+        .select("brand_name, is_active")
+        .eq("user_id", userId)
+        .eq("is_active", true);
+
+      if (monitors) {
+        setMonitoredBrandIds(new Set(monitors.map((m) => m.brand_name)));
+      }
     } catch (err) {
       console.error("Failed to fetch history:", err);
     } finally {
       setLoadingHistory(false);
     }
   }, [supabase]);
+
+  const toggleBrandMonitoring = async (item: any) => {
+    if (!user) {
+      setAuthInitialMode("signin");
+      setIsAuthOpen(true);
+      return;
+    }
+
+    if (profile?.tier !== "agency" && profile?.tier !== "pro") {
+      setIsPricingOpen(true);
+      return;
+    }
+
+    try {
+      setMonitoringLoading(item.id);
+      
+      const { data: existing } = await supabase
+        .from("monitored_brands")
+        .select("id, is_active")
+        .eq("user_id", user.id)
+        .eq("brand_name", item.target_brand)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("monitored_brands")
+          .update({ is_active: !existing.is_active })
+          .eq("id", existing.id);
+      } else {
+        await supabase
+          .from("monitored_brands")
+          .insert({
+            user_id: user.id,
+            brand_name: item.target_brand,
+            brand_domain: item.target_domain,
+            category: item.category || "General",
+            is_active: true,
+            last_sov: item.share_of_voice || 0,
+          });
+      }
+
+      await fetchAuditHistory(user.id);
+    } catch (err) {
+      console.error("Failed to toggle brand monitoring:", err);
+    } finally {
+      setMonitoringLoading(null);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -723,49 +784,78 @@ function DashboardContent() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/70">
-                      {auditHistory.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-800/40 transition">
-                          <td className="py-4 px-5 text-xs text-slate-400 whitespace-nowrap">
-                            {new Date(item.created_at).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            })}
-                          </td>
-                          <td className="py-4 px-5">
-                            {item.audit_type === "compare" ? (
-                              <span className="px-2.5 py-1 bg-purple-950 text-purple-300 border border-purple-800 text-[11px] font-bold rounded-lg flex items-center gap-1 w-fit">
-                                <Swords className="h-3 w-3" /> Compare
+                      {auditHistory.map((item) => {
+                        const isMonitored = monitoredBrandIds.has(item.target_brand);
+                        return (
+                          <tr key={item.id} className="hover:bg-slate-800/40 transition">
+                            <td className="py-4 px-5 text-xs text-slate-400 whitespace-nowrap">
+                              {new Date(item.created_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
+                            </td>
+                            <td className="py-4 px-5">
+                              {item.audit_type === "compare" ? (
+                                <span className="px-2.5 py-1 bg-purple-950 text-purple-300 border border-purple-800 text-[11px] font-bold rounded-lg flex items-center gap-1 w-fit">
+                                  <Swords className="h-3 w-3" /> Compare
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 text-[11px] font-bold rounded-lg w-fit">
+                                  Single
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-5 font-bold text-white">
+                              {item.target_brand || "N/A"}
+                              <span className="block text-xs font-normal text-slate-400 font-mono">
+                                {item.target_domain}
                               </span>
-                            ) : (
-                              <span className="px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 text-[11px] font-bold rounded-lg w-fit">
-                                Single
+                            </td>
+                            <td className="py-4 px-5 text-xs text-slate-300">{item.category || "General"}</td>
+                            <td className="py-4 px-5">
+                              <span className="text-sm font-black text-indigo-400">
+                                {item.share_of_voice ?? item.summary_payload?.share_of_voice_percentage ?? 0}%
                               </span>
-                            )}
-                          </td>
-                          <td className="py-4 px-5 font-bold text-white">
-                            {item.target_brand || "N/A"}
-                            <span className="block text-xs font-normal text-slate-400 font-mono">
-                              {item.target_domain}
-                            </span>
-                          </td>
-                          <td className="py-4 px-5 text-xs text-slate-300">{item.category || "General"}</td>
-                          <td className="py-4 px-5">
-                            <span className="text-sm font-black text-indigo-400">
-                              {item.share_of_voice ?? item.summary_payload?.share_of_voice_percentage ?? 0}%
-                            </span>
-                          </td>
-                          <td className="py-4 px-5 text-right">
-                            <button
-                              onClick={() => loadPastReport(item.id)}
-                              className="px-3.5 py-1.5 bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-200 text-xs font-bold rounded-lg transition inline-flex items-center gap-1.5 shadow-sm"
-                            >
-                              Open <OpenIcon className="h-3 w-3" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="py-4 px-5 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => toggleBrandMonitoring(item)}
+                                  disabled={monitoringLoading === item.id}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border shadow-sm ${
+                                    isMonitored
+                                      ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/60"
+                                      : profile?.tier === "agency" || profile?.tier === "pro"
+                                      ? "bg-slate-900 border-indigo-500/30 text-indigo-300 hover:border-indigo-400"
+                                      : "bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300"
+                                  }`}
+                                  title="Automated Weekly Citation Monitoring"
+                                >
+                                  {monitoringLoading === item.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : isMonitored ? (
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                                  ) : (
+                                    <Zap className="h-3 w-3 text-amber-400" />
+                                  )}
+                                  <span className="hidden sm:inline">
+                                    {isMonitored ? "Monitoring" : "Monitor Weekly"}
+                                  </span>
+                                </button>
+
+                                <button
+                                  onClick={() => loadPastReport(item.id)}
+                                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-200 text-xs font-bold rounded-lg transition inline-flex items-center gap-1.5 shadow-sm"
+                                >
+                                  Open <OpenIcon className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
