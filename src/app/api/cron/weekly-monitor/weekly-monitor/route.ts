@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
   process.env.SUPABASE_SERVICE_ROLE_KEY || ""
@@ -8,10 +10,11 @@ const supabaseAdmin = createClient(
 
 const API_BASE_URL = 
   process.env.NEXT_PUBLIC_API_BASE_URL || 
+  process.env.NEXT_PUBLIC_API_URL ||
   "https://pulseflow-aeo-backend.onrender.com";
 
 export async function GET(req: NextRequest) {
-  // Verify Vercel Cron Secret (protects unauthorized public invocations)
+  // Verify Vercel Cron Secret (if configured in environment variables)
   const authHeader = req.headers.get("authorization");
   if (
     process.env.CRON_SECRET &&
@@ -27,8 +30,13 @@ export async function GET(req: NextRequest) {
       .select("*, profiles:user_id(email, tier)")
       .eq("is_active", true);
 
-    if (error || !activeMonitors) {
-      return NextResponse.json({ error: "No active monitors found" }, { status: 200 });
+    if (error || !activeMonitors || activeMonitors.length === 0) {
+      return NextResponse.json({
+        status: "success",
+        message: "No active monitored brands found",
+        monitored_count: 0,
+        runs: []
+      }, { status: 200 });
     }
 
     const results = [];
@@ -56,24 +64,42 @@ export async function GET(req: NextRequest) {
             user_id: monitor.user_id,
           };
 
-      const auditRes = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      try {
+        const auditRes = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      if (auditRes.ok) {
-        const data = await auditRes.json();
-        
-        // Update last run time in monitoring table
-        await supabaseAdmin
-          .from("monitored_brands")
-          .update({
-            last_run_at: new Date().toISOString(),
-          })
-          .eq("id", monitor.id);
+        if (auditRes.ok) {
+          const data = await auditRes.json();
 
-        results.push({ brand: monitor.brand_name, job_id: data.job_id, status: "triggered" });
+          // Update last run time in monitoring table
+          await supabaseAdmin
+            .from("monitored_brands")
+            .update({
+              last_run_at: new Date().toISOString(),
+            })
+            .eq("id", monitor.id);
+
+          results.push({
+            brand: monitor.brand_name,
+            job_id: data.job_id,
+            status: "triggered"
+          });
+        } else {
+          results.push({
+            brand: monitor.brand_name,
+            status: "failed",
+            error: `API responded with ${auditRes.status}`
+          });
+        }
+      } catch (err: any) {
+        results.push({
+          brand: monitor.brand_name,
+          status: "failed",
+          error: err.message
+        });
       }
     }
 
