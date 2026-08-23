@@ -42,6 +42,7 @@ import {
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
 import PricingModal from "@/components/PricingModal";
+import PulseCitationLogo from "@/components/PulseCitationLogo";
 
 const API_BASE_URL = 
   process.env.NEXT_PUBLIC_API_BASE_URL || 
@@ -520,7 +521,7 @@ function DashboardContent() {
     },
     {
       q: "Is the initial audit completely free?",
-      a: "Yes. You can test your brand or run a head-to-head comparison with 30 evaluated prompts with zero credit card required."
+      a: "Yes. You can test your brand or run a head-to-head comparison with evaluated prompts with zero credit card required."
     }
   ];
 
@@ -535,10 +536,8 @@ function DashboardContent() {
       {/* FROSTED NAVBAR */}
       <header className="no-print fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-xl bg-[#030712]/85 border-b border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setSummaryData(null); router.push("/"); }}>
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 border border-indigo-400/30">
-              <BarChart3 className="h-5 w-5 text-white" />
-            </div>
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setSummaryData(null); router.push("/"); }}>
+            <PulseCitationLogo size={42} className="group-hover:scale-105 transition-transform" />
             <span className="font-extrabold text-xl tracking-tight text-white">
               PulseFlow <span className="text-indigo-400 font-black">AEO</span>
             </span>
@@ -690,7 +689,7 @@ function DashboardContent() {
                   <Zap className="h-4 w-4" /> Live Evaluation Sandbox
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-white">
-                  Launch 30-Prompt Visibility Audit
+                  Launch Multi-Engine Visibility Audit
                 </h2>
               </div>
 
@@ -801,12 +800,12 @@ function DashboardContent() {
                 {status === "processing" ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    {mode === "compare" ? "Parallel Evaluation Running..." : "Evaluating 30 High-Intent Prompts..."}
+                    {mode === "compare" ? "Parallel Multi-Engine Evaluation Running..." : "Evaluating Multi-Engine Queries..."}
                   </>
                 ) : (
                   <>
                     <Search className="h-4 w-4" />
-                    {mode === "compare" ? `Run Head-to-Head: ${brandA || "Brand A"} vs ${brandB || "Brand B"}` : `Run 30-Prompt Audit for ${brandA || "Target Brand"}`}
+                    {mode === "compare" ? `Run Head-to-Head: ${brandA || "Brand A"} vs ${brandB || "Brand B"}` : `Run Live Audit for ${brandA || "Target Brand"}`}
                   </>
                 )}
               </button>
@@ -961,8 +960,11 @@ function DashboardContent() {
                     Category: {category} &bull; Target Domain: {domainA} &bull; Competitor: {domainB}
                   </p>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-black text-indigo-400">PulseFlow AEO</div>
+                <div className="text-right flex flex-col items-end">
+                  <div className="flex items-center gap-1.5">
+                    <PulseCitationLogo size={20} />
+                    <span className="text-sm font-black text-indigo-400">PulseFlow AEO</span>
+                  </div>
                   <div className="text-[10px] text-slate-400">{currentDate}</div>
                   <div className="text-[9px] text-slate-500 font-mono">Job ID: {jobId?.substring(0, 8)}...</div>
                 </div>
@@ -1279,8 +1281,11 @@ function DashboardContent() {
                     Category: {category} &bull; Target Domain: {domainA}
                   </p>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-black text-indigo-400">PulseFlow AEO</div>
+                <div className="text-right flex flex-col items-end">
+                  <div className="flex items-center gap-1.5">
+                    <PulseCitationLogo size={20} />
+                    <span className="text-sm font-black text-indigo-400">PulseFlow AEO</span>
+                  </div>
                   <div className="text-[10px] text-slate-400">{currentDate}</div>
                   <div className="text-[9px] text-slate-500 font-mono">Job ID: {jobId?.substring(0, 8)}...</div>
                 </div>
@@ -1356,7 +1361,7 @@ function DashboardContent() {
                 <p className="text-5xl font-black text-white">
                   {summaryData.share_of_voice_percentage ?? summaryData.sov_percentage ?? 0}%
                 </p>
-                <p className="text-xs text-slate-400">Across {summaryData.total_prompts_evaluated || 30} evaluated queries</p>
+                <p className="text-xs text-slate-400">Across {summaryData.total_prompts_evaluated || 28} evaluated queries</p>
               </div>
 
               <div className="kpi-card bg-slate-900/90 border border-slate-800 p-6 rounded-2xl space-y-2 shadow-xl">
@@ -1373,7 +1378,7 @@ function DashboardContent() {
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wide">
                   <FileText className="h-4 w-4" /> TOTAL QUERIES
                 </div>
-                <p className="text-5xl font-black text-white">{summaryData.total_prompts_evaluated || 30}</p>
+                <p className="text-5xl font-black text-white">{summaryData.total_prompts_evaluated || 28}</p>
                 <p className="text-xs text-slate-400">Prompts in category taxonomy</p>
               </div>
 
@@ -1641,7 +1646,7 @@ function DashboardContent() {
               </div>
               <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-6 text-center space-y-1">
                 <div className="text-3xl font-black text-purple-400">&lt; 15s</div>
-                <div className="text-xs font-medium text-slate-400">30-Prompt Audit Execution Speed</div>
+                <div className="text-xs font-medium text-slate-400">Multi-Engine Audit Execution Speed</div>
               </div>
               <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-6 text-center space-y-1">
                 <div className="text-3xl font-black text-emerald-400">4.2x</div>
@@ -1700,7 +1705,7 @@ function DashboardContent() {
                       <div className="space-y-4">
                         <h3 className="text-2xl font-bold text-white">Full-Funnel AI Visibility Mapping</h3>
                         <p className="text-sm text-slate-400 leading-relaxed">
-                          Answer Engines do not output ten blue links. They summarize, cite, and rank the single best answer. PulseFlow measures your exact presence across 30 taxonomy prompts in under 15 seconds.
+                          Answer Engines do not output ten blue links. They summarize, cite, and rank the single best answer. PulseFlow measures your exact presence across custom taxonomy prompts in under 15 seconds.
                         </p>
                         <ul className="space-y-2.5 text-xs text-slate-300 font-medium">
                           <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" /> Real-time Share of Voice percentage calculation</li>
@@ -1713,7 +1718,7 @@ function DashboardContent() {
                         <div className="text-emerald-400">&quot;target_brand&quot;: &quot;YourBrand&quot;,</div>
                         <div>&quot;share_of_voice&quot;: &quot;78.5%&quot;,</div>
                         <div>&quot;average_rank&quot;: 1.4,</div>
-                        <div>&quot;prompts_evaluated&quot;: 30,</div>
+                        <div>&quot;prompts_evaluated&quot;: 28,</div>
                         <div>&quot;cited_sources_detected&quot;: 12</div>
                       </div>
                     </div>
@@ -1790,7 +1795,7 @@ function DashboardContent() {
                   </div>
                   <h4 className="text-base font-bold text-white">Prompt Synthesis</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Constructs 30 high-intent category queries matching buyer searches.
+                    Constructs high-intent category queries matching buyer searches.
                   </p>
                 </div>
 
@@ -1876,7 +1881,8 @@ function DashboardContent() {
       <footer className="no-print border-t border-slate-800/80 mt-20 py-12 text-slate-500 text-xs">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 text-white font-bold">
-            <BarChart3 className="h-4 w-4 text-indigo-400" /> PulseFlow AEO
+            <PulseCitationLogo size={24} />
+            <span>PulseFlow AEO</span>
           </div>
           <p>&copy; 2026 PulseFlow AEO Engine. Enterprise Answer Engine Optimization Platform.</p>
           <div className="flex gap-6">
