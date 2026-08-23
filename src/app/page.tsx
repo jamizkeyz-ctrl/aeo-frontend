@@ -60,6 +60,33 @@ const AI_ENGINES = [
   { id: "google", name: "Google AI Overviews", badge: "Google", color: "text-purple-400 border-purple-500/30 bg-purple-950/40" }
 ];
 
+const PRESET_BENCHMARKS = [
+  {
+    title: "Linear vs Jira",
+    brandA: "Linear",
+    domainA: "linear.app",
+    brandB: "Jira",
+    domainB: "atlassian.com/software/jira",
+    category: "Issue Tracking & Project Management"
+  },
+  {
+    title: "Supabase vs Firebase",
+    brandA: "Supabase",
+    domainA: "supabase.com",
+    brandB: "Firebase",
+    domainB: "firebase.google.com",
+    category: "Backend-as-a-Service & Databases"
+  },
+  {
+    title: "Notion vs Obsidian",
+    brandA: "Notion",
+    domainA: "notion.so",
+    brandB: "Obsidian",
+    domainB: "obsidian.md",
+    category: "Knowledge Management & Note Taking"
+  }
+];
+
 function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -285,8 +312,8 @@ function DashboardContent() {
     return () => clearInterval(interval);
   }, [jobId, status, user, fetchAuditHistory, fetchUserProfile]);
 
-  const handleStartAudit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleStartAudit = async (e?: React.FormEvent, customPayload?: any) => {
+    if (e) e.preventDefault();
 
     if (profile && profile.tier === "free" && profile.audits_used >= profile.audits_limit) {
       setIsPricingOpen(true);
@@ -297,26 +324,30 @@ function DashboardContent() {
     setError(null);
     setSummaryData(null);
 
-    const cleanDomainA = domainA.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const cleanDomainB = domainB.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const bA = customPayload ? customPayload.brand_a_name : brandA;
+    const dA = (customPayload ? customPayload.brand_a_domain : domainA).replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const bB = customPayload ? customPayload.brand_b_name : brandB;
+    const dB = (customPayload ? customPayload.brand_b_domain : domainB).replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const cat = customPayload ? customPayload.category : category;
+    const currentMode = customPayload ? (customPayload.isCompare ? "compare" : "single") : mode;
 
-    const endpoint = mode === "compare" 
+    const endpoint = currentMode === "compare" 
       ? "/api/v1/aeo/compare-audit"
       : "/api/v1/aeo/batch-audit";
 
-    const payload = mode === "compare"
+    const payload = currentMode === "compare"
       ? { 
-          brand_a_name: brandA, 
-          brand_a_domain: cleanDomainA, 
-          brand_b_name: brandB, 
-          brand_b_domain: cleanDomainB, 
-          category,
+          brand_a_name: bA, 
+          brand_a_domain: dA, 
+          brand_b_name: bB, 
+          brand_b_domain: dB, 
+          category: cat,
           user_id: user?.id || null 
         }
       : { 
-          target_brand: brandA, 
-          target_domain: cleanDomainA, 
-          category,
+          target_brand: bA, 
+          target_domain: dA, 
+          category: cat,
           user_id: user?.id || null 
         };
 
@@ -335,6 +366,24 @@ function DashboardContent() {
       setStatus("failed");
       setError(err.message || "An unexpected error occurred.");
     }
+  };
+
+  const handleApplyPreset = (preset: typeof PRESET_BENCHMARKS[0]) => {
+    setMode("compare");
+    setBrandA(preset.brandA);
+    setDomainA(preset.domainA);
+    setBrandB(preset.brandB);
+    setDomainB(preset.domainB);
+    setCategory(preset.category);
+
+    handleStartAudit(undefined, {
+      isCompare: true,
+      brand_a_name: preset.brandA,
+      brand_a_domain: preset.domainA,
+      brand_b_name: preset.brandB,
+      brand_b_domain: preset.domainB,
+      category: preset.category
+    });
   };
 
   const handleSignOut = async () => {
@@ -457,7 +506,6 @@ function DashboardContent() {
       const bA = summaryData.brand_a_summary?.target_brand || brandA || "Brand A";
       const bB = summaryData.brand_b_summary?.target_brand || brandB || "Brand B";
 
-      // CSV Header
       const headers = [
         "Engine",
         "Prompt",
@@ -843,6 +891,28 @@ function DashboardContent() {
               </div>
             </div>
 
+            {/* PRE-RUN BENCHMARK PRESETS (QUICK LINKS) */}
+            <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                <Flame className="h-4 w-4 text-amber-400 animate-pulse" />
+                <span>TRY LIVE SHOWCASE BENCHMARKS:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {PRESET_BENCHMARKS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleApplyPreset(preset)}
+                    disabled={status === "processing"}
+                    className="px-3 py-1.5 bg-slate-900 hover:bg-indigo-600/30 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-indigo-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                  >
+                    <Swords className="h-3 w-3 text-indigo-400" />
+                    <span>{preset.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <form onSubmit={handleStartAudit} className="space-y-6">
               <div className={`grid grid-cols-1 ${mode === "compare" ? "md:grid-cols-5" : "md:grid-cols-3"} gap-4`}>
                 <div>
@@ -1119,7 +1189,7 @@ function DashboardContent() {
                   {copiedLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Share2 className="h-4 w-4" />}
                   {copiedLink ? "Link Copied!" : "Share"}
                 </button>
-                
+
                 {/* EXPORT CSV BUTTON */}
                 <button
                   onClick={handleExportCSV}
