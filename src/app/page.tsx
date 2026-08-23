@@ -37,7 +37,10 @@ import {
   Crown, 
   Flame,
   Bot,
-  Filter
+  Filter,
+  Download,
+  FileSpreadsheet,
+  FileCode2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import AuthModal from "@/components/AuthModal";
@@ -440,6 +443,126 @@ function DashboardContent() {
     });
   }, [rawHeadToHead, selectedEngine]);
 
+  const isCompareReport = summaryData && (summaryData.brand_a_summary || summaryData.head_to_head_prompts);
+
+  // --- CSV & JSON EXPORT UTILITIES ---
+
+  const handleExportCSV = () => {
+    if (!summaryData) return;
+
+    let csvContent = "";
+    const filenameDate = new Date().toISOString().split("T")[0];
+
+    if (isCompareReport) {
+      const bA = summaryData.brand_a_summary?.target_brand || brandA || "Brand A";
+      const bB = summaryData.brand_b_summary?.target_brand || brandB || "Brand B";
+
+      // CSV Header
+      const headers = [
+        "Engine",
+        "Prompt",
+        `${bA} Mentioned`,
+        `${bA} Rank`,
+        `${bB} Mentioned`,
+        `${bB} Rank`,
+        "Winner Designation"
+      ];
+
+      const rows = (summaryData.head_to_head_prompts || []).map((item: any) => {
+        const engineLabel = AI_ENGINES.find(e => e.id === (item.engine || "").toLowerCase())?.name || item.engine || "General";
+        const promptEscaped = `"${(item.prompt || "").replace(/"/g, '""')}"`;
+        const winnerLabel = 
+          item.winner === "brand_a" ? bA :
+          item.winner === "brand_b" ? bB : "Tie / Neither";
+
+        return [
+          `"${engineLabel}"`,
+          promptEscaped,
+          item.brand_a_mentioned ? "Yes" : "No",
+          item.brand_a_rank ? `#${item.brand_a_rank}` : "Unranked",
+          item.brand_b_mentioned ? "Yes" : "No",
+          item.brand_b_rank ? `#${item.brand_b_rank}` : "Unranked",
+          `"${winnerLabel}"`
+        ].join(",");
+      });
+
+      csvContent = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `PulseFlow_Benchmark_${bA}_vs_${bB}_${filenameDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      const target = summaryData.target_brand || brandA || "Target Brand";
+
+      const headers = [
+        "Engine",
+        "Prompt",
+        "Mention Status",
+        "Rank Position",
+        "Top Competitor"
+      ];
+
+      const rows = (summaryData.prompt_results || summaryData.prompts || []).map((item: any) => {
+        const engineLabel = AI_ENGINES.find(e => e.id === (item.engine || "").toLowerCase())?.name || item.engine || "General";
+        const promptEscaped = `"${(item.prompt || "").replace(/"/g, '""')}"`;
+        const mentioned = item.brand_mentioned || item.mentioned ? "Mentioned" : "Missing";
+        const rank = item.rank ? `#${item.rank}` : "Unranked";
+        const competitor = `"${(item.top_competitor || "Competitor").replace(/"/g, '""')}"`;
+
+        return [
+          `"${engineLabel}"`,
+          promptEscaped,
+          mentioned,
+          rank,
+          competitor
+        ].join(",");
+      });
+
+      csvContent = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `PulseFlow_Audit_${target}_${filenameDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleExportJSON = () => {
+    if (!summaryData) return;
+
+    const filenameDate = new Date().toISOString().split("T")[0];
+    const exportPayload = {
+      platform: "PulseFlow AEO Engine",
+      exported_at: new Date().toISOString(),
+      job_id: jobId,
+      category: category,
+      audit_type: isCompareReport ? "head_to_head_compare" : "single_brand_audit",
+      summary: summaryData
+    };
+
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(exportPayload, null, 2)
+    )}`;
+    
+    const targetName = isCompareReport 
+      ? `${summaryData.brand_a_summary?.target_brand || "BrandA"}_vs_${summaryData.brand_b_summary?.target_brand || "BrandB"}`
+      : summaryData.target_brand || "TargetBrand";
+
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", jsonString);
+    downloadAnchor.setAttribute("download", `PulseFlow_Data_${targetName}_${filenameDate}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.removeChild(downloadAnchor);
+  };
+
   const getDomainName = (urlStr: string) => {
     try {
       return new URL(urlStr).hostname.replace(/^www\./, "");
@@ -503,8 +626,6 @@ function DashboardContent() {
     ];
     return strategies[idx % strategies.length];
   };
-
-  const isCompareReport = summaryData && (summaryData.brand_a_summary || summaryData.head_to_head_prompts);
 
   const faqs = [
     {
@@ -971,7 +1092,7 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* SCREEN REPORT HEADER */}
+            {/* SCREEN REPORT HEADER & EXPORT TOOLBAR */}
             <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -990,14 +1111,34 @@ function DashboardContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleShareLink}
-                  className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-2"
+                  className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
                 >
                   {copiedLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Share2 className="h-4 w-4" />}
-                  {copiedLink ? "Link Copied!" : "Share Link"}
+                  {copiedLink ? "Link Copied!" : "Share"}
                 </button>
+                
+                {/* EXPORT CSV BUTTON */}
+                <button
+                  onClick={handleExportCSV}
+                  className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-850 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                  title="Export raw prompt rows & ranks as CSV"
+                >
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Export CSV
+                </button>
+
+                {/* EXPORT JSON BUTTON */}
+                <button
+                  onClick={handleExportJSON}
+                  className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-850 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                  title="Export complete audit JSON payload"
+                >
+                  <FileCode2 className="h-4 w-4 text-amber-400" /> JSON
+                </button>
+
+                {/* EXPORT PDF BUTTON */}
                 <button
                   onClick={() => window.print()}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 shadow-md shadow-indigo-600/20"
@@ -1292,7 +1433,7 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* SCREEN REPORT HEADER */}
+            {/* SCREEN REPORT HEADER & EXPORT TOOLBAR */}
             <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button 
@@ -1311,14 +1452,34 @@ function DashboardContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleShareLink}
-                  className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-2"
+                  className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
                 >
                   {copiedLink ? <Check className="h-4 w-4 text-emerald-400" /> : <Share2 className="h-4 w-4" />}
-                  {copiedLink ? "Link Copied!" : "Share Link"}
+                  {copiedLink ? "Link Copied!" : "Share"}
                 </button>
+
+                {/* EXPORT CSV BUTTON */}
+                <button
+                  onClick={handleExportCSV}
+                  className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-850 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                  title="Export raw prompt rows & ranks as CSV"
+                >
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> Export CSV
+                </button>
+
+                {/* EXPORT JSON BUTTON */}
+                <button
+                  onClick={handleExportJSON}
+                  className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-850 text-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                  title="Export complete audit JSON payload"
+                >
+                  <FileCode2 className="h-4 w-4 text-amber-400" /> JSON
+                </button>
+
+                {/* EXPORT PDF BUTTON */}
                 <button
                   onClick={() => window.print()}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 shadow-md shadow-indigo-600/20"
