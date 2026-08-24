@@ -126,6 +126,7 @@ function DashboardContent() {
 
   // UI States
   const [copiedSchema, setCopiedSchema] = useState(false);
+  const [copiedBadge, setCopiedBadge] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedOutreachIdx, setCopiedOutreachIdx] = useState<number | null>(null);
   const [copiedUrlIdx, setCopiedUrlIdx] = useState<number | null>(null);
@@ -422,7 +423,6 @@ function DashboardContent() {
     { name: "Legacy Platform", count: "Moderate Citations" }
   ];
 
-  // Ground Truth Engine-Specific Metric Calculation
   const engineBreakdown = useMemo(() => {
     const baseSov = summaryData?.share_of_voice_percentage ?? summaryData?.sov_percentage ?? 0;
     return {
@@ -449,7 +449,6 @@ function DashboardContent() {
     };
   }, [summaryData, realCitedSources]);
 
-  // Real Backend Data for Single Brand Prompts
   const rawPrompts = summaryData?.prompt_results || summaryData?.prompts || summaryData?.results || [];
   const filteredPrompts = useMemo(() => {
     if (selectedEngine === "all") return rawPrompts;
@@ -459,7 +458,6 @@ function DashboardContent() {
     });
   }, [rawPrompts, selectedEngine]);
 
-  // Real Backend Data for Head-to-Head Comparison Prompts
   const rawHeadToHead = summaryData?.head_to_head_prompts || [];
   const filteredHeadToHead = useMemo(() => {
     const list = selectedEngine === "all" 
@@ -493,8 +491,6 @@ function DashboardContent() {
   }, [rawHeadToHead, selectedEngine]);
 
   const isCompareReport = summaryData && (summaryData.brand_a_summary || summaryData.head_to_head_prompts);
-
-  // --- CSV & JSON EXPORT UTILITIES ---
 
   const handleExportCSV = () => {
     if (!summaryData) return;
@@ -1379,6 +1375,43 @@ function DashboardContent() {
             {/* TAB 2: REMEDIATION & FIXES */}
             {activeReportTab === "remediation" && (
               <div className="space-y-8 animate-fadeIn">
+                
+                {/* EMBEDDABLE CITATION BADGE */}
+                <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <Trophy className="h-3.5 w-3.5" /> Authority Verification
+                      </span>
+                      <h3 className="text-lg font-bold text-white mt-1">Embeddable AEO Verified Badge</h3>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const badgeCode = `<a href="https://pulseflowaeo.com" target="_blank" rel="noopener noreferrer"><img src="https://pulseflowaeo.com/badge/top-cited.svg" alt="PulseFlow AEO #1 Top Cited Entity" /></a>`;
+                        navigator.clipboard.writeText(badgeCode);
+                        setCopiedBadge(true);
+                        setTimeout(() => setCopiedBadge(false), 2000);
+                      }}
+                      className="no-print px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition self-start sm:self-auto"
+                    >
+                      {copiedBadge ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                      {copiedBadge ? "Badge Code Copied!" : "Copy HTML Badge"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Showcase your brand&apos;s answer engine citation dominance on your site footer, docs, or press releases.
+                  </p>
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono text-slate-500">Live Preview:</span>
+                      <img src="/badge/top-cited.svg" alt="PulseFlow AEO Verified Badge" className="h-10 w-auto" />
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-400 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800/80 max-w-md truncate">
+                      &lt;a href=&quot;https://pulseflowaeo.com&quot;&gt;&lt;img src=&quot;https://pulseflowaeo.com/badge/top-cited.svg&quot; /&gt;&lt;/a&gt;
+                    </div>
+                  </div>
+                </div>
+
                 <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -1772,6 +1805,43 @@ function DashboardContent() {
             {/* TAB 2: REMEDIATION */}
             {activeReportTab === "remediation" && (
               <div className="space-y-8 animate-fadeIn">
+                
+                {/* EMBEDDABLE CITATION BADGE */}
+                <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <Trophy className="h-3.5 w-3.5" /> Authority Verification
+                      </span>
+                      <h3 className="text-lg font-bold text-white mt-1">Embeddable AEO Verified Badge</h3>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const badgeCode = `<a href="https://pulseflowaeo.com" target="_blank" rel="noopener noreferrer"><img src="https://pulseflowaeo.com/badge/top-cited.svg" alt="PulseFlow AEO #1 Top Cited Entity" /></a>`;
+                        navigator.clipboard.writeText(badgeCode);
+                        setCopiedBadge(true);
+                        setTimeout(() => setCopiedBadge(false), 2000);
+                      }}
+                      className="no-print px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl flex items-center gap-2 text-xs font-semibold transition self-start sm:self-auto"
+                    >
+                      {copiedBadge ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                      {copiedBadge ? "Badge Code Copied!" : "Copy HTML Badge"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Showcase your brand&apos;s answer engine citation dominance on your site footer, docs, or press releases.
+                  </p>
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono text-slate-500">Live Preview:</span>
+                      <img src="/badge/top-cited.svg" alt="PulseFlow AEO Verified Badge" className="h-10 w-auto" />
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-400 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800/80 max-w-md truncate">
+                      &lt;a href=&quot;https://pulseflowaeo.com&quot;&gt;&lt;img src=&quot;https://pulseflowaeo.com/badge/top-cited.svg&quot; /&gt;&lt;/a&gt;
+                    </div>
+                  </div>
+                </div>
+
                 <div className="remediation-box bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">

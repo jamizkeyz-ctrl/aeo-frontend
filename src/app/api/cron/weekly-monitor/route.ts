@@ -27,7 +27,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 1. Fetch active monitored brands
     const { data: activeMonitors, error: dbError } = await supabaseAdmin
       .from("monitored_brands")
       .select("id, user_id, brand_name, brand_domain, competitor_brand, competitor_domain, category, is_active, last_sov")
@@ -49,7 +48,6 @@ export async function GET(req: NextRequest) {
 
     const results = [];
 
-    // 2. Process each monitored brand
     for (const monitor of activeMonitors) {
       const isCompare = !!monitor.competitor_brand;
       const endpoint = isCompare
@@ -83,7 +81,6 @@ export async function GET(req: NextRequest) {
           const data = await auditRes.json();
           const jobId = data.job_id;
 
-          // Update last run time in monitoring table
           await supabaseAdmin
             .from("monitored_brands")
             .update({
@@ -91,14 +88,12 @@ export async function GET(req: NextRequest) {
             })
             .eq("id", monitor.id);
 
-          // Fetch user's email address (Dual lookup: Auth Admin -> Profiles table)
           let recipientEmail: string | null = null;
           if (monitor.user_id) {
             try {
               const { data: userData } = await supabaseAdmin.auth.admin.getUserById(monitor.user_id);
               recipientEmail = userData?.user?.email || null;
             } catch {
-              // Fallback to profiles table
               const { data: profileData } = await supabaseAdmin
                 .from("profiles")
                 .select("email")
@@ -111,13 +106,13 @@ export async function GET(req: NextRequest) {
           let emailStatus = "not_sent";
           let emailErrorMsg: string | null = null;
 
-          // Send Email Digest via Resend
           if (recipientEmail && resend) {
             try {
               const reportUrl = `https://pulseflowaeo.com/?report=${jobId}`;
               const { error: resendErr } = await resend.emails.send({
-                from: "PulseFlow AEO <onboarding@resend.dev>",
+                from: "PulseFlow AEO Intelligence <reports@pulseflowaeo.com>",
                 to: recipientEmail,
+                replyTo: "support@pulseflowaeo.com",
                 subject: `[PulseFlow AEO] Weekly Citation Digest: ${monitor.brand_name}`,
                 html: `
                   <!DOCTYPE html>
@@ -142,7 +137,7 @@ export async function GET(req: NextRequest) {
                     <div class="card">
                       <div class="badge">Weekly AEO Monitoring</div>
                       <h1>Citation Audit Dispatched</h1>
-                      <p>Your automated weekly evaluation for <strong>${monitor.brand_name}</strong> (${monitor.brand_domain}) has been executed across ChatGPT Search, Perplexity AI, Claude, and Google AI Overviews.</p>
+                      <p>Your automated weekly evaluation for <strong>${monitor.brand_name}</strong> (${monitor.brand_domain}) has been executed across ChatGPT Search, Perplexity AI, Claude 3.5, and Google AI Overviews.</p>
                       
                       <div class="kpi-container">
                         <div class="kpi-box">
@@ -161,7 +156,7 @@ export async function GET(req: NextRequest) {
 
                       <div class="footer">
                         PulseFlow AEO Engine &bull; Automated Agency Monitoring<br>
-                        You are receiving this digest because weekly citation monitoring is enabled for ${monitor.brand_domain}.
+                        Sent securely from <strong>reports@pulseflowaeo.com</strong> for ${monitor.brand_domain}.
                       </div>
                     </div>
                   </body>
