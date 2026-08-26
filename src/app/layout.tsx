@@ -32,13 +32,22 @@ export const metadata: Metadata = {
     title: "PulseFlow AEO | Answer Engine Visibility Engine",
     description:
       "Benchmark Share of Voice across ChatGPT, Perplexity & Claude with automated schema remediation.",
+    images: [
+      {
+        url: "/og-banner.png",
+        width: 1200,
+        height: 630,
+        alt: "PulseFlow AEO - AI Citation Intelligence",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PulseFlow AEO | AI Answer Engine Visibility Engine",
+    title: "PulseFlow AEO | Answer Engine Visibility Engine",
     description:
       "Benchmark Share of Voice across ChatGPT, Perplexity & Claude with automated schema remediation.",
     creator: "@pulseflowaeo",
+    images: ["/og-banner.png"],
   },
   robots: {
     index: true,
