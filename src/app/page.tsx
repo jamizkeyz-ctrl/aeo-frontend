@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import Script from "next/script";
 import { 
   BarChart3, 
@@ -714,6 +715,9 @@ function DashboardContent() {
               <a href="#solutions" className="hover:text-white transition">Platform</a>
               <a href="#architecture" className="hover:text-white transition">Architecture</a>
               <a href="#faq" className="hover:text-white transition">FAQ</a>
+              <Link href="/resources/how-to-track-ai-search-visibility" className="text-indigo-400 hover:text-indigo-300 transition">
+                Resources
+              </Link>
             </nav>
           )}
 
@@ -2188,7 +2192,7 @@ function DashboardContent() {
           <p>&copy; 2026 PulseFlow AEO Engine. Enterprise Answer Engine Optimization Platform.</p>
           <div className="flex gap-6">
             <a href="#engine" className="hover:text-slate-300 transition">Audit Engine</a>
-            <a href="#solutions" className="hover:text-slate-300 transition">Solutions</a>
+            <Link href="/resources/how-to-track-ai-search-visibility" className="hover:text-slate-300 transition">AI Visibility Guide</Link>
             <a href="#architecture" className="hover:text-slate-300 transition">Architecture</a>
           </div>
         </div>
