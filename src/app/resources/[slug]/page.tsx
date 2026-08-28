@@ -1,7 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, ArrowLeft, Bot, CheckCircle2 } from "lucide-react";
+import { Sparkles, ArrowLeft, Bot } from "lucide-react";
 
 // Mock database or content store for your AEO articles
 const ARTICLES: Record<string, { title: string; directAnswer: string; content: string; category: string }> = {
@@ -33,18 +33,37 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const resolvedParams = await params;
-  const article = ARTICLES[resolvedParams.slug];
+  const article = ARTICLES[resolvedParams.slug as keyof typeof ARTICLES];
   if (!article) return { title: "Page Not Found | PulseFlow AEO" };
 
   return {
-    title: `${article.title} | PulseFlow AEO`,
+    title: article.title,
     description: article.directAnswer,
+    openGraph: {
+      title: `${article.title} | PulseFlow AEO`,
+      description: article.directAnswer,
+      url: `https://pulseflowaeo.com/resources/${resolvedParams.slug}`,
+      images: [
+        {
+          url: "/og-banner.png",
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${article.title} | PulseFlow AEO`,
+      description: article.directAnswer,
+      images: ["/og-banner.png"],
+    },
   };
 }
 
 export default async function ResourcePage({ params }: PageProps) {
   const resolvedParams = await params;
-  const article = ARTICLES[resolvedParams.slug];
+  const article = ARTICLES[resolvedParams.slug as keyof typeof ARTICLES];
 
   if (!article) {
     notFound();
