@@ -43,6 +43,7 @@ export async function generateMetadata({ params }: PageProps) {
       title: `${article.title} | PulseFlow AEO`,
       description: article.directAnswer,
       url: `https://pulseflowaeo.com/resources/${resolvedParams.slug}`,
+      siteName: "PulseFlow AEO",
       images: [
         {
           url: "/og-banner.png",
