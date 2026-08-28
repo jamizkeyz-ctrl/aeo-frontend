@@ -60,9 +60,26 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "PulseFlow AEO",
+    "url": "https://pulseflowaeo.com",
+    "logo": "https://pulseflowaeo.com/og-banner.png",
+    "sameAs": [
+      "https://twitter.com/pulseflowaeo"
+    ],
+    "description": "Enterprise AI Answer Engine Optimization (AEO) and Share of Voice tracking platform."
+  };
+
   return (
     <html lang="en" className="dark scroll-smooth">
       <body className={`${inter.className} bg-[#030712] text-slate-100 antialiased`}>
+        {/* Global Organization Entity Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
         {children}
       </body>
     </html>
