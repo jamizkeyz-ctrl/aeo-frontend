@@ -715,8 +715,11 @@ function DashboardContent() {
               <a href="#solutions" className="hover:text-white transition">Platform</a>
               <a href="#architecture" className="hover:text-white transition">Architecture</a>
               <a href="#faq" className="hover:text-white transition">FAQ</a>
-              <Link href="/resources/how-to-track-ai-search-visibility" className="text-indigo-400 hover:text-indigo-300 transition">
-                Resources
+              <Link href="/resources/best-aeo-software" className="text-indigo-400 hover:text-indigo-300 transition">
+                Best AEO Tools
+              </Link>
+              <Link href="/resources/how-to-track-ai-search-visibility" className="text-slate-400 hover:text-white transition">
+                AI Visibility Guide
               </Link>
             </nav>
           )}
@@ -2166,6 +2169,20 @@ function DashboardContent() {
           </>
         )}
 
+        {/* COMPARISON PAGES FOOTER LINKS SECTION */}
+        <div className="no-print border-t border-slate-800/80 pt-8 max-w-4xl mx-auto text-center space-y-3">
+          <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">Explore PulseFlow AEO Comparisons:</p>
+          <div className="flex justify-center gap-6 text-xs flex-wrap">
+            <Link href="/alternative/semrush" className="text-indigo-400 hover:underline">Semrush Alternative</Link>
+            <Link href="/alternative/ahrefs" className="text-indigo-400 hover:underline">Ahrefs Alternative</Link>
+            <Link href="/alternative/moz" className="text-indigo-400 hover:underline">Moz Alternative</Link>
+            <Link href="/alternative/brightedge" className="text-indigo-400 hover:underline">BrightEdge Alternative</Link>
+          </div>
+          <p className="text-xs text-slate-500 pt-2">
+            Industry Research: Check out our latest guide on <Link href="/resources/best-aeo-software" className="text-indigo-400 hover:underline font-semibold">10 Best Answer Engine Optimization (AEO) Tools for 2026</Link>.
+          </p>
+        </div>
+
         <AuthModal 
           isOpen={isAuthOpen} 
           initialMode={authInitialMode}
@@ -2192,8 +2209,8 @@ function DashboardContent() {
           <p>&copy; 2026 PulseFlow AEO Engine. Enterprise Answer Engine Optimization Platform.</p>
           <div className="flex gap-6">
             <a href="#engine" className="hover:text-slate-300 transition">Audit Engine</a>
+            <Link href="/resources/best-aeo-software" className="hover:text-slate-300 transition">Best AEO Tools Guide</Link>
             <Link href="/resources/how-to-track-ai-search-visibility" className="hover:text-slate-300 transition">AI Visibility Guide</Link>
-            <a href="#architecture" className="hover:text-slate-300 transition">Architecture</a>
           </div>
         </div>
       </footer>
