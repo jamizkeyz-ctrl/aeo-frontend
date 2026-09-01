@@ -710,17 +710,29 @@ function DashboardContent() {
           </div>
 
           {!user && (
-            <nav className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-slate-400">
+             <nav className="hidden lg:flex items-center gap-7 text-xs font-semibold uppercase tracking-wider text-slate-400">
               <a href="#engine" className="hover:text-white transition">Live Engine</a>
               <a href="#solutions" className="hover:text-white transition">Platform</a>
               <a href="#architecture" className="hover:text-white transition">Architecture</a>
               <a href="#faq" className="hover:text-white transition">FAQ</a>
-              <Link href="/resources/best-aeo-software" className="text-indigo-400 hover:text-indigo-300 transition">
-                Best AEO Tools
-              </Link>
-              <Link href="/resources/how-to-track-ai-search-visibility" className="text-slate-400 hover:text-white transition">
-                AI Visibility Guide
-              </Link>
+              
+              {/* Clean Resources Dropdown / Popover or Group */}
+              <div className="relative group py-2">
+                <button className="flex items-center gap-1 hover:text-white transition uppercase">
+                  Resources <ChevronDown className="h-3 w-3 transition-transform group-hover:rotate-180" />
+                </button>
+                <div className="absolute top-full left-0 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl py-2 hidden group-hover:block space-y-1 z-50">
+                  <Link href="/resources/best-aeo-software" className="block px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+                    10 Best AEO Tools (2026)
+                  </Link>
+                  <Link href="/resources/best-aeo-tools-for-tracking-chatgpt-brand-mentions" className="block px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+                    Tracking ChatGPT Mentions
+                  </Link>
+                  <Link href="/resources/how-to-track-ai-search-visibility" className="block px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+                    AI Visibility Guide
+                  </Link>
+                </div>
+              </div>
             </nav>
           )}
 
