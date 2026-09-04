@@ -8,6 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/resources/best-aeo-software',
     '/resources/best-aeo-tools-for-tracking-chatgpt-brand-mentions',
     '/resources/how-to-track-ai-search-visibility',
+    '/resources/state-of-ai-search-visibility-2026',
     '/alternative/semrush',
     '/alternative/ahrefs',
     '/alternative/moz',
