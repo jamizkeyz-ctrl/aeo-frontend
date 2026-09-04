@@ -731,6 +731,9 @@ function DashboardContent() {
                   <Link href="/resources/how-to-track-ai-search-visibility" className="block px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
                     AI Visibility Guide
                   </Link>
+                  <Link href="/resources/state-of-ai-search-visibility-2026" className="block px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800/80 transition">
+                    2026 AI Search Visibility Report
+                  </Link>
                 </div>
               </div>
             </nav>
