@@ -1,24 +1,14 @@
 import type { NextConfig } from "next";
 
 /**
- * Canonical host: the sitemap, JSON-LD and metadataBase all use the apex
- * domain, but www.pulseflowaeo.com also resolved — two hosts serving the
- * same content splits every ranking and citation signal. www now 301s to
- * the apex.
+ * Host canonicalisation is owned by Vercel's domain settings, NOT by this
+ * file. A www -> apex redirect here fought Vercel's own edge redirect and
+ * produced ERR_TOO_MANY_REDIRECTS in production. Set the primary domain in
+ * Vercel (Project -> Settings -> Domains) and let the edge handle it; one
+ * redirect authority only.
  */
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-
-  async redirects() {
-    return [
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.pulseflowaeo.com" }],
-        destination: "https://pulseflowaeo.com/:path*",
-        permanent: true,
-      },
-    ];
-  },
 
   async headers() {
     return [
