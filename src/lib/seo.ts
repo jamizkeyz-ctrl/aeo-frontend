@@ -10,6 +10,7 @@
 export const SITE_URL = "https://pulseflowaeo.com";
 export const SITE_NAME = "PulseFlow AEO";
 export const TWITTER = "@pulseflowaeo";
+export const CONTACT_EMAIL = "admin@pulseflowaeo.com";
 
 export const SITE_DESCRIPTION =
   "Answer Engine Optimization platform that measures your brand's share of voice across ChatGPT, Perplexity, Claude and Google AI Overviews, then generates the JSON-LD schema and outreach fixes that get you cited.";
@@ -131,6 +132,13 @@ export function organizationSchema(): Graph {
       height: 630,
     },
     description: SITE_DESCRIPTION,
+    email: CONTACT_EMAIL,
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "sales",
+      email: CONTACT_EMAIL,
+      url: `${SITE_URL}/pricing`,
+    },
     sameAs: ["https://twitter.com/pulseflowaeo"],
   };
 }

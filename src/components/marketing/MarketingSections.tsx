@@ -6,7 +6,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { FAQS, PLANS } from "@/lib/seo";
+import { FAQS, PLANS, CONTACT_EMAIL } from "@/lib/seo";
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -689,7 +689,7 @@ export function PricingSection({ heading = true }: { heading?: boolean }) {
             strategist.
           </p>
           <a
-            href="mailto:hello@pulseflowaeo.com?subject=PulseFlow%20AEO%20enterprise"
+            href={`mailto:${CONTACT_EMAIL}?subject=PulseFlow%20AEO%20enterprise`}
             className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 transition hover:bg-slate-800"
           >
             Talk to us

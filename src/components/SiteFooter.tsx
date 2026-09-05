@@ -6,6 +6,7 @@
 import React from "react";
 import Link from "next/link";
 import PulseCitationLogo from "@/components/PulseCitationLogo";
+import { CONTACT_EMAIL } from "@/lib/seo";
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
@@ -50,7 +51,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/#faq", label: "FAQ" },
       { href: "/#method", label: "Methodology" },
-      { href: "mailto:hello@pulseflowaeo.com", label: "Contact" },
+      { href: `mailto:${CONTACT_EMAIL}`, label: "Contact" },
       { href: "https://twitter.com/pulseflowaeo", label: "X / Twitter" },
     ],
   },

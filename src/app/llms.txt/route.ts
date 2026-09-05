@@ -1,4 +1,4 @@
-import { SITE_URL, PLANS, FAQS, SITE_DESCRIPTION } from "@/lib/seo";
+import { SITE_URL, PLANS, FAQS, SITE_DESCRIPTION, CONTACT_EMAIL } from "@/lib/seo";
 
 /**
  * /llms.txt — a plain-text brief for language models that fetch the site.
@@ -65,7 +65,7 @@ Checkout is handled by Paystack. A free audit requires no credit card.
 ${faqs}
 
 ## Contact
-hello@pulseflowaeo.com
+${CONTACT_EMAIL}
 https://twitter.com/pulseflowaeo
 `;
 }
