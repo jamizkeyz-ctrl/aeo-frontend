@@ -1,33 +1,74 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* ------------------------------------------------------------------ */
+/* The app commits to one visual world (dark). The previous file defined a
+   light palette on :root and a dark one behind prefers-color-scheme, while
+   the markup hard-coded dark colours — so the tokens never actually applied
+   and the body font fell back to Arial. Both are fixed here.            */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030712;
+  --foreground: #f1f5f9;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Wired to the next/font variables declared in layout.tsx. */
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, "SF Mono", Menlo, Consolas,
+    monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ------------------------------------------------------------- */
-/* EXECUTIVE PDF & PRINT STYLING (@media print)                 */
-/* ------------------------------------------------------------- */
+/* Headings carry the display face. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  text-wrap: balance;
+}
+
+/* ------------------------------------------------------------------ */
+/* Static marketing shell                                              */
+/* ------------------------------------------------------------------ */
+/* The marketing sections are server-rendered so crawlers always receive
+   them. When a signed-in workspace or a finished report is on screen they
+   are visually hidden rather than unmounted — the HTML stays in the
+   document, the reader gets an uncluttered view.                        */
+
+body[data-workspace="active"] [data-marketing] {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Motion                                                              */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------- */
+/* EXECUTIVE PDF & PRINT STYLING (@media print)                        */
+/* ------------------------------------------------------------------- */
 @media print {
   @page {
     size: A4 portrait;
@@ -41,22 +82,24 @@ body {
     print-color-adjust: exact !important;
   }
 
-  /* Hide navigation, forms, interactive buttons */
+  /* Hide navigation, forms, interactive buttons and the marketing shell */
   header,
   nav,
   form,
   button,
   .no-print,
+  [data-marketing],
   #engine,
   #history,
-  #solutions,
-  #architecture,
+  #platform,
+  #method,
+  #compare,
+  #pricing,
   #faq,
   footer {
     display: none !important;
   }
 
-  /* Ensure report content fills full width and removes top margin */
   main {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
@@ -64,7 +107,6 @@ body {
     width: 100% !important;
   }
 
-  /* Prevent awkward splits across pages */
   .print-avoid-break,
   table tr,
   .kpi-card,
@@ -73,17 +115,16 @@ body {
     break-inside: avoid !important;
   }
 
-  /* Table styling enhancements for PDF */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
   }
 
-  th, td {
+  th,
+  td {
     padding: 8px 12px !important;
   }
 
-  /* Force background fills and crisp borders */
   .bg-slate-900,
   .bg-slate-950,
   .bg-indigo-950,
